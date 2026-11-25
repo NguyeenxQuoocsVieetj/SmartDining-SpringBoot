@@ -27,9 +27,11 @@ public class CounterShiftServiceImpl implements CounterShiftService {
 
     private final CounterShiftMapper counterShiftMapper;
     private final EmployeeMapper employeeMapper;
+    private final ShiftWriteLock shiftWriteLock;
 
     @Override
     public CounterShift create(CounterShift input) {
+        shiftWriteLock.lockUntilTransactionEnds();
         require(input, "dữ liệu ca quầy");
         LocalDateTime startedAt = input.getStartedAt() != null ? input.getStartedAt() : now();
         CounterShift shift = fromInput(input, startedAt);
@@ -52,6 +54,7 @@ public class CounterShiftServiceImpl implements CounterShiftService {
 
     @Override
     public CounterShift update(Long id, CounterShift input) {
+        shiftWriteLock.lockUntilTransactionEnds();
         CounterShift existing = findExisting(id);
         require(input, "dữ liệu ca quầy");
         CounterShift shift = fromInput(input, existing.getStartedAt());
@@ -62,6 +65,7 @@ public class CounterShiftServiceImpl implements CounterShiftService {
 
     @Override
     public void delete(Long id) {
+        shiftWriteLock.lockUntilTransactionEnds();
         findExisting(id);
         counterShiftMapper.deleteById(id);
     }
@@ -69,6 +73,7 @@ public class CounterShiftServiceImpl implements CounterShiftService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CounterShift close(Long id) {
+        shiftWriteLock.lockUntilTransactionEnds();
         CounterShift shift = findExisting(id);
         // Câu UPDATE chỉ đóng ca còn mở, nên hai người đóng cùng lúc thì một người nhận 409
         if (counterShiftMapper.close(id, closingTime(shift.getStartedAt())) == 0) {

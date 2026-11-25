@@ -39,6 +39,7 @@ public class CounterServiceImpl implements CounterService {
     private final EmployeeMapper employeeMapper;
     private final CounterCodeStore codeStore;
     private final CounterCodeSender codeSender;
+    private final ShiftWriteLock shiftWriteLock;
 
     @Override
     public CounterSessionResponse getCurrentShift() {
@@ -75,6 +76,7 @@ public class CounterServiceImpl implements CounterService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CounterSessionResponse openShift(String username, String code) {
+        shiftWriteLock.lockUntilTransactionEnds();
         String name = cleanUsername(username);
         require(code, "code");
         requireNoOpenShift();
@@ -99,6 +101,7 @@ public class CounterServiceImpl implements CounterService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void closeCurrentShift() {
+        shiftWriteLock.lockUntilTransactionEnds();
         CounterShift shift = requireOpenShift();
         if (counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
             throw noOpenShift();
