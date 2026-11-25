@@ -77,4 +77,24 @@
         FROM employees
         WHERE username = #{username}
     </select>
+
+    <select id="findByIdForUpdate" resultMap="employeeResultMap" flushCache="true" useCache="false">
+        SELECT <include refid="columns"/>
+        FROM employees
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="findActiveSession" resultMap="employeeResultMap">
+        SELECT <include refid="columns"/>
+        FROM employees
+        WHERE id = #{employeeId}
+          AND status = 'ACTIVE'
+          AND EXISTS (SELECT 1
+                      FROM refresh_tokens r
+                      WHERE r.session_id = #{sessionId}
+                        AND r.employee_id = #{employeeId}
+                        AND r.revoked_at IS NULL
+                        AND r.expires_at &gt; #{now})
+    </select>
 </mapper>
