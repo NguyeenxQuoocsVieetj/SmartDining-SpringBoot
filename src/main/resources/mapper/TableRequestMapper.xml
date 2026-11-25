@@ -71,6 +71,15 @@
           AND status = 'PENDING'
     </delete>
 
+    <update id="completePendingByTableId">
+        UPDATE table_requests
+        SET status = 'COMPLETED',
+            completed_by = #{completedBy},
+            completed_at = #{completedAt}
+        WHERE table_id = #{tableId}
+          AND status = 'PENDING'
+    </update>
+
     <select id="findPendingPaymentByTableId" resultMap="tableRequestResultMap">
         SELECT <include refid="columns"/>
         FROM table_requests

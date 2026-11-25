@@ -1,8 +1,10 @@
 package org.springboot.smartdining.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springboot.smartdining.entity.TableRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -22,4 +24,9 @@ public interface TableRequestMapper {
 
     /** Yêu cầu thanh toán đang chờ của bàn; database bảo đảm tối đa một. */
     TableRequest findPendingPaymentByTableId(Long tableId);
+
+    /** Đóng mọi yêu cầu đang chờ của bàn. */
+    int completePendingByTableId(@Param("tableId") Long tableId,
+                                 @Param("completedBy") Long completedBy,
+                                 @Param("completedAt") LocalDateTime completedAt);
 }

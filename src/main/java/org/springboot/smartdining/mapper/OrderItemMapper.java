@@ -48,4 +48,7 @@ public interface OrderItemMapper {
 
     /** Mọi món của các đơn mang về lấy trong một ngày. */
     List<OrderItem> findTakeawayByPickupDate(LocalDate pickupDate);
+
+    /** Xóa mọi món còn trong giỏ của đơn. */
+    int deleteCartByOrderId(Long orderId);
 }

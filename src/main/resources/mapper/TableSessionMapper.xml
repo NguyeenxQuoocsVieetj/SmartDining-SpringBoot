@@ -54,6 +54,13 @@
         WHERE id = #{id}
     </delete>
 
+    <update id="closeOpenByTableId">
+        UPDATE table_sessions
+        SET closed_at = #{closedAt}
+        WHERE table_id = #{tableId}
+          AND closed_at IS NULL
+    </update>
+
     <select id="findByTokenHash" resultMap="tableSessionResultMap">
         SELECT <include refid="columns"/>
         FROM table_sessions

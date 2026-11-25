@@ -37,3 +37,5 @@ out/
 .vscode/
 
 .env
+# Ảnh bill chuyển khoản do ứng dụng lưu
+/data/

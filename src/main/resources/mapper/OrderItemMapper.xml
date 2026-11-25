@@ -111,6 +111,12 @@
         ORDER BY id
     </select>
 
+    <delete id="deleteCartByOrderId">
+        DELETE FROM order_items
+        WHERE order_id = #{orderId}
+          AND status = 'CART'
+    </delete>
+
     <select id="findTakeawayByPickupDate" resultMap="orderItemResultMap">
         SELECT <include refid="columns"/>
         FROM order_items

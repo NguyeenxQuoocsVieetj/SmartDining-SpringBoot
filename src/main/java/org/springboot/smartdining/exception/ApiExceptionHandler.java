@@ -13,6 +13,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.sql.SQLException;
@@ -68,6 +70,20 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return concurrentModification();
     }
 
+    /** Nội dung multipart hỏng. Vượt dung lượng có hàm riêng ở lớp cha. */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ProblemDetail> handleMultipart(MultipartException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Không đọc được nội dung tải lên");
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(status, "Dữ liệu tải lên quá lớn");
+        body.setProperty(CODE, "PAYLOAD_TOO_LARGE");
+        return createResponseEntity(body, headers, status, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleUnexpected(Exception ex) {
         if (isRecordChanged(ex)) {
@@ -104,7 +120,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleTypeMismatch(
             TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        ProblemDetail body = ProblemDetail.forStatusAndDetail(status, "Tham số trên đường dẫn sai kiểu");
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(status, "Tham số sai kiểu hoặc giá trị không hợp lệ");
         body.setProperty(CODE, "TYPE_MISMATCH");
         return createResponseEntity(body, headers, status, request);
     }
