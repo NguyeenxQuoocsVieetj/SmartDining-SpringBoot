@@ -38,4 +38,7 @@ public interface DiningTableMapper {
     int deleteById(Long id);
 
     DiningTable findByQrToken(String qrToken);
+
+    /** Đọc và khóa bản ghi bàn tới hết transaction. */
+    DiningTable findByIdForUpdate(Long id);
 }

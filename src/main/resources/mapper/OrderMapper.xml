@@ -87,4 +87,11 @@
         WHERE table_id = #{tableId}
           AND status = 'UNPAID'
     </select>
+
+    <select id="findUnpaidByTableId" resultMap="orderResultMap">
+        SELECT <include refid="columns"/>
+        FROM orders
+        WHERE table_id = #{tableId}
+          AND status = 'UNPAID'
+    </select>
 </mapper>

@@ -22,4 +22,7 @@ public interface ProductMapper {
 
     /** Món đang bán thuộc danh mục đang bán (MNU-2), xếp theo danh mục rồi theo id. */
     List<Product> findOnSale();
+
+    /** Các món xuất hiện trong một đơn, mỗi món một lần. */
+    List<Product> findByOrderId(Long orderId);
 }

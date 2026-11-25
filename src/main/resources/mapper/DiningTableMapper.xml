@@ -58,4 +58,11 @@
         FROM dining_tables
         WHERE qr_token = #{qrToken}
     </select>
+
+    <select id="findByIdForUpdate" resultMap="diningTableResultMap" flushCache="true" useCache="false">
+        SELECT <include refid="columns"/>
+        FROM dining_tables
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
 </mapper>

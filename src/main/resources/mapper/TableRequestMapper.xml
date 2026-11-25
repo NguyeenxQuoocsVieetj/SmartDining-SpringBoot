@@ -63,4 +63,11 @@
         DELETE FROM table_requests
         WHERE id = #{id}
     </delete>
+
+    <delete id="deletePendingPaymentByTableId">
+        DELETE FROM table_requests
+        WHERE table_id = #{tableId}
+          AND request_type = 'PAYMENT'
+          AND status = 'PENDING'
+    </delete>
 </mapper>

@@ -38,4 +38,7 @@ public interface OrderItemMapper {
     int deleteById(Long id);
 
     int countByProductId(Long productId);
+
+    /** Mọi món của đơn, theo thứ tự thêm vào. */
+    List<OrderItem> findByOrderId(Long orderId);
 }

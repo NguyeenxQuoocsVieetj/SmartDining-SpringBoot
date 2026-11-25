@@ -17,4 +17,6 @@ public interface TableRequestMapper {
     int update(TableRequest tableRequest);
 
     int deleteById(Long id);
+
+    int deletePendingPaymentByTableId(Long tableId);
 }

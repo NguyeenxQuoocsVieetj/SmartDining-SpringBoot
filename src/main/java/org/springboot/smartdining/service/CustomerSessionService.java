@@ -12,6 +12,7 @@ import org.springboot.smartdining.mapper.TableSessionMapper;
 import org.springboot.smartdining.security.TableTokens;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -70,6 +71,39 @@ public class CustomerSessionService {
             throw new TableSessionInvalidException();
         }
         return session;
+    }
+
+    /** Bàn của phiên, dùng cho thao tác chỉ đọc. */
+    @Transactional(readOnly = true)
+    public DiningTable tableOf(String token) {
+        return diningTableMapper.findById(requireSession(token).getTableId());
+    }
+
+    /**
+     * Khóa bản ghi bàn của phiên tới hết transaction, để mọi thao tác đổi giỏ, đơn, bàn
+     * trên cùng một bàn chạy lần lượt. Phải gọi trước khi đọc đơn.
+     * Transaction gọi hàm này dùng READ_COMMITTED để đọc được dữ liệu mới nhất sau khi chờ khóa.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public DiningTable lockTable(String token) {
+        Long tableId = requireSession(token).getTableId();
+        DiningTable table = diningTableMapper.findByIdForUpdate(tableId);
+        // Kiểm lại: phiên có thể vừa bị đóng trong lúc chờ khóa
+        requireSession(token);
+        requireActive(table);
+        return table;
+    }
+
+    /** Đổi trạng thái bàn đã khóa; không làm gì nếu bàn đang ở trạng thái đó. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void changeTableStatus(DiningTable table, TableStatus status) {
+        if (table.getStatus() == status) {
+            return;
+        }
+        table.setStatus(status);
+        if (diningTableMapper.update(table) == 0) {
+            throw new ConflictException("Bàn vừa được người khác sửa, hãy thử lại");
+        }
     }
 
     private void requireActive(DiningTable table) {

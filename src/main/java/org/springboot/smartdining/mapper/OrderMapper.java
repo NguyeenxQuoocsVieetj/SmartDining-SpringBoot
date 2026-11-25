@@ -38,4 +38,7 @@ public interface OrderMapper {
     int deleteById(Long id);
 
     int countUnpaidByTableId(Long tableId);
+
+    /** Đơn đang mở của bàn, null nếu không có. Database bảo đảm mỗi bàn tối đa một đơn. */
+    Order findUnpaidByTableId(Long tableId);
 }
