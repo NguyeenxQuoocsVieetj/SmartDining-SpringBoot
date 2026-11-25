@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartDining API Server</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #064e3b;
+            color: #6ee7b7;
+            font-size: 14px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34d399;
+        }
+
+        h1 { font-size: 26px; margin-bottom: 12px; }
+
+        p { color: #94a3b8; line-height: 1.6; margin-bottom: 8px; }
+
+        .note {
+            margin-top: 24px;
+            padding: 14px;
+            background: #0f172a;
+            border-left: 3px solid #f59e0b;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+
+        footer { margin-top: 28px; font-size: 13px; color: #64748b; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="status">
+        <span class="dot"></span>
+        Server đang hoạt động
+    </div>
+
+    <h1>SmartDining Backend</h1>
+    <p>Đây là <strong>server backend</strong>, chỉ cung cấp API.</p>
+    <p>Server này <strong>không có giao diện người dùng</strong>.</p>
+
+    <div class="note">
+        ⚠️ Nếu bạn muốn sử dụng hệ thống, vui lòng truy cập ứng dụng frontend.
+        Các request tới API cần gửi đúng endpoint và phương thức (GET, POST, PUT, DELETE).
+    </div>
+
+    <footer>© 2026 SmartDining</footer>
+</div>
+</body>
+</html>
