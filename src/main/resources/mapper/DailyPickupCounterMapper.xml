@@ -38,4 +38,14 @@
         DELETE FROM daily_pickup_counters
         WHERE business_date = #{businessDate}
     </delete>
+
+    <insert id="upsertNextCode">
+        INSERT INTO daily_pickup_counters (business_date, last_code)
+        VALUES (#{businessDate}, LAST_INSERT_ID(1))
+        ON DUPLICATE KEY UPDATE last_code = LAST_INSERT_ID(last_code + 1)
+    </insert>
+
+    <select id="selectLastInsertId" resultType="int" flushCache="true" useCache="false">
+        SELECT LAST_INSERT_ID()
+    </select>
 </mapper>

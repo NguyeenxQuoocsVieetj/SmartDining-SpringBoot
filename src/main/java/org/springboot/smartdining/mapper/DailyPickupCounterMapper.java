@@ -18,4 +18,10 @@ public interface DailyPickupCounterMapper {
     int update(DailyPickupCounter dailyPickupCounter);
 
     int deleteById(LocalDate businessDate);
+
+    /** Tăng bộ đếm của ngày (tạo mới nếu chưa có) và ghi mã vừa cấp vào LAST_INSERT_ID. */
+    int upsertNextCode(LocalDate businessDate);
+
+    /** Đọc mã vừa cấp; gọi ngay sau {@link #upsertNextCode} trong cùng transaction. */
+    int selectLastInsertId();
 }
