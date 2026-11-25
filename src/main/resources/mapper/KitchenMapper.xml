@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.KitchenMapper">
+
+    <resultMap id="taskResultMap" type="org.springboot.smartdining.dto.KitchenTaskResponse">
+        <constructor>
+            <idArg column="item_id" javaType="long"/>
+            <arg column="order_id" javaType="long"/>
+            <arg column="order_type" javaType="org.springboot.smartdining.enums.OrderType"/>
+            <arg column="table_id" javaType="long"/>
+            <arg column="group_name" javaType="string"/>
+            <arg column="pickup_code" javaType="int"/>
+            <arg column="pickup_time" javaType="java.time.LocalDateTime"/>
+            <arg column="product_id" javaType="long"/>
+            <arg column="product_name" javaType="string"/>
+            <arg column="quantity" javaType="int"/>
+            <arg column="note" javaType="string"/>
+            <arg column="status" javaType="org.springboot.smartdining.enums.OrderItemStatus"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="started_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="taskSelect">
+        SELECT oi.id            AS item_id,
+               oi.order_id      AS order_id,
+               o.order_type     AS order_type,
+               o.table_id       AS table_id,
+               CASE WHEN o.order_type = 'TAKEAWAY' THEN CONCAT('Mang về #', o.pickup_code)
+                    ELSE t.name END AS group_name,
+               o.pickup_code    AS pickup_code,
+               o.pickup_time    AS pickup_time,
+               oi.product_id    AS product_id,
+               p.name           AS product_name,
+               oi.quantity      AS quantity,
+               oi.note          AS note,
+               oi.status        AS status,
+               oi.created_at    AS created_at,
+               oi.started_at    AS started_at
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        JOIN products p ON p.id = oi.product_id
+        LEFT JOIN dining_tables t ON t.id = o.table_id
+    </sql>
+
+    <select id="findTasks" resultMap="taskResultMap">
+        <include refid="taskSelect"/>
+        WHERE oi.status IN ('PENDING', 'PREPARING')
+          AND ((o.order_type = 'DINE_IN' AND o.status = 'UNPAID')
+               OR (o.order_type = 'TAKEAWAY' AND o.status &lt;&gt; 'CANCELLED'))
+        ORDER BY oi.created_at, oi.id
+    </select>
+</mapper>
