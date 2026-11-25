@@ -52,6 +52,13 @@
         WHERE ended_at IS NULL
     </select>
 
+    <select id="findByIdForUpdate" resultMap="counterShiftResultMap" flushCache="true" useCache="false">
+        SELECT <include refid="columns"/>
+        FROM counter_shifts
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
     <update id="close">
         UPDATE counter_shifts
         SET ended_at = #{endedAt}
