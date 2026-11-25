@@ -78,4 +78,15 @@
         FROM products
         WHERE id IN (SELECT product_id FROM order_items WHERE order_id = #{orderId})
     </select>
+
+    <select id="findTakeawayByPickupDate" resultMap="productResultMap">
+        SELECT <include refid="columns"/>
+        FROM products
+        WHERE id IN
+              (SELECT oi.product_id
+               FROM order_items oi
+               JOIN orders o ON o.id = oi.order_id
+               WHERE o.pickup_date = #{pickupDate}
+                 AND o.order_type = 'TAKEAWAY')
+    </select>
 </mapper>

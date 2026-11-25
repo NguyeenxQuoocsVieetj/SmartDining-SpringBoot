@@ -109,4 +109,12 @@
           AND order_type = 'DINE_IN'
         ORDER BY id
     </select>
+
+    <select id="findTakeawayByPickupDate" resultMap="orderResultMap">
+        SELECT <include refid="columns"/>
+        FROM orders
+        WHERE pickup_date = #{pickupDate}
+          AND order_type = 'TAKEAWAY'
+        ORDER BY created_at DESC, id DESC
+    </select>
 </mapper>

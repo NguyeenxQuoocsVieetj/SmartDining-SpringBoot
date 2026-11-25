@@ -3,6 +3,7 @@ package org.springboot.smartdining.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.springboot.smartdining.entity.Product;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
@@ -25,4 +26,7 @@ public interface ProductMapper {
 
     /** Các món xuất hiện trong một đơn, mỗi món một lần. */
     List<Product> findByOrderId(Long orderId);
+
+    /** Các món xuất hiện trong đơn mang về lấy trong một ngày, mỗi món một lần. */
+    List<Product> findTakeawayByPickupDate(LocalDate pickupDate);
 }

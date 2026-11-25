@@ -3,6 +3,7 @@ package org.springboot.smartdining.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.springboot.smartdining.entity.Order;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
@@ -47,4 +48,7 @@ public interface OrderMapper {
 
     /** Mọi đơn tại bàn đang mở. */
     List<Order> findUnpaidDineIn();
+
+    /** Đơn mang về lấy trong một ngày, mới nhất trước. */
+    List<Order> findTakeawayByPickupDate(LocalDate pickupDate);
 }
