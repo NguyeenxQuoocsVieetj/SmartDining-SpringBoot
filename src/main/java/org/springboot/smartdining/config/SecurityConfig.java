@@ -4,12 +4,14 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springboot.smartdining.enums.EmployeeRole;
 import org.springboot.smartdining.security.SessionJwtConverter;
 import org.springboot.smartdining.security.TokenService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -42,6 +44,10 @@ import java.util.Arrays;
 @Slf4j
 @Configuration
 public class SecurityConfig {
+
+    private static final String ADMIN = EmployeeRole.ADMIN.name();
+    private static final String STAFF = EmployeeRole.STAFF.name();
+    private static final String KITCHEN = EmployeeRole.KITCHEN.name();
 
     /** HS256 cần khóa ít nhất bằng độ dài mã băm. */
     private static final int MIN_KEY_BYTES = 32;
@@ -104,9 +110,28 @@ public class SecurityConfig {
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/me", "/api/v1/auth/password")
                         .authenticated()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/api/v1/admin/**").hasRole(ADMIN)
+                        .requestMatchers("/api/v1/kitchen/**").hasAnyRole(KITCHEN, ADMIN)
+                        .requestMatchers("/api/v1/staff/**").hasAnyRole(STAFF, ADMIN)
+                        // Quầy: xem thì nhân viên và quản trị đều được
+                        .requestMatchers(HttpMethod.GET, "/api/v1/counter/shift",
+                                "/api/v1/counter/refunds/pending", "/api/v1/counter/reservations")
+                        .hasAnyRole(STAFF, ADMIN)
+                        // Vào ca: chỉ nhân viên, và service chỉ cho làm với chính tài khoản của mình
+                        .requestMatchers(HttpMethod.GET, "/api/v1/counter/employees").hasRole(STAFF)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/counter/shift",
+                                "/api/v1/counter/shift/codes").hasRole(STAFF)
+                        // Thao tác ghi của quầy: service còn kiểm người gọi đang trực ca
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/counter/shift").hasAnyRole(STAFF, ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/counter/refunds",
+                                "/api/v1/counter/reservations/*/confirm",
+                                "/api/v1/counter/reservations/*/arrive",
+                                "/api/v1/counter/reservations/*/cancel")
+                        .hasAnyRole(STAFF, ADMIN)
+                        .anyRequest().denyAll())
                 .oauth2ResourceServer(server -> server
                         .bearerTokenResolver(bearerTokenResolver())
                         .authenticationEntryPoint(entryPoint)

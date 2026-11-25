@@ -66,12 +66,6 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="findAdminId" resultType="long">
-        SELECT id
-        FROM employees
-        WHERE role = 'ADMIN'
-    </select>
-
     <select id="findByUsername" resultMap="employeeResultMap">
         SELECT <include refid="columns"/>
         FROM employees

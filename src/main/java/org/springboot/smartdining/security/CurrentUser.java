@@ -1,24 +1,23 @@
 package org.springboot.smartdining.security;
 
-import lombok.RequiredArgsConstructor;
-import org.springboot.smartdining.mapper.EmployeeMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-/**
- * Tạm thời, khi chưa bật Spring Security: người thao tác luôn là tài khoản ADMIN.
- * Chỉ dùng khi chạy trên máy cá nhân.
- */
+/** Người đang đăng nhập của request hiện tại. */
 @Component
-@RequiredArgsConstructor
 public class CurrentUser {
 
-    private final EmployeeMapper employeeMapper;
+    /** Chỉ gọi trong request đã xác thực; không có người đăng nhập là lỗi cấu hình phân quyền. */
+    public EmployeePrincipal require() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof EmployeePrincipal principal) {
+            return principal;
+        }
+        throw new IllegalStateException("Thao tác này cần người đã đăng nhập");
+    }
 
     public Long getId() {
-        Long id = employeeMapper.findAdminId();
-        if (id == null) {
-            throw new IllegalStateException("Database chưa có tài khoản ADMIN nên không xác định được người thao tác");
-        }
-        return id;
+        return require().id();
     }
 }
