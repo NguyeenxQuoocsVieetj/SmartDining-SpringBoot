@@ -5,7 +5,9 @@ import org.springboot.smartdining.dto.StaffItemResponse;
 import org.springboot.smartdining.dto.StaffOrderResponse;
 import org.springboot.smartdining.dto.StaffRequestResponse;
 import org.springboot.smartdining.dto.StaffTableResponse;
+import org.springboot.smartdining.dto.TableBillResponse;
 import org.springboot.smartdining.dto.TableRequestResponse;
+import org.springboot.smartdining.service.BillService;
 import org.springboot.smartdining.service.StaffService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,7 @@ import java.util.List;
 public class StaffController {
 
     private final StaffService staffService;
+    private final BillService billService;
 
     @GetMapping("/tables")
     public List<StaffTableResponse> getTables() {
@@ -30,6 +33,11 @@ public class StaffController {
     @GetMapping("/tables/{id}/order")
     public StaffOrderResponse getOrder(@PathVariable Long id) {
         return staffService.getOrder(id);
+    }
+
+    @GetMapping("/tables/{id}/bill")
+    public TableBillResponse getBill(@PathVariable Long id) {
+        return billService.getBill(id);
     }
 
     @GetMapping("/ready-items")
