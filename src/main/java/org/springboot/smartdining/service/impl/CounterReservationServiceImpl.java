@@ -33,6 +33,9 @@ import static org.springboot.smartdining.service.impl.ServiceChecks.require;
 @Transactional(readOnly = true)
 public class CounterReservationServiceImpl implements CounterReservationService {
 
+    /** Thời điểm muộn nhất cột DATETIME so sánh được; giá trị lưu (không có phần lẻ giây) luôn nhỏ hơn. */
+    private static final LocalDateTime LAST_TIME = LocalDateTime.of(9999, 12, 31, 23, 59, 59, 999_999_000);
+
     private final ReservationMapper reservationMapper;
     private final DiningTableMapper diningTableMapper;
     private final OpenShiftLocker openShiftLocker;
@@ -57,8 +60,13 @@ public class CounterReservationServiceImpl implements CounterReservationService 
 
     @Override
     public List<CounterReservationResponse> search(LocalDate date, ReservationStatus status, String phone) {
+        if (date != null && (date.getYear() < 1 || date.isAfter(LAST_TIME.toLocalDate()))) {
+            return List.of();
+        }
         LocalDateTime from = date == null ? null : date.atStartOfDay();
-        LocalDateTime to = date == null ? null : date.plusDays(1).atStartOfDay();
+        // Ngày cuối cùng database lưu được thì không có mốc trên: ngày kế tiếp đã ngoài tầm DATETIME
+        LocalDateTime to = date == null || date.equals(LAST_TIME.toLocalDate())
+                ? null : date.plusDays(1).atStartOfDay();
         String wantedPhone = phone == null || phone.isBlank() ? null : PhoneNumbers.normalize(phone);
         return reservationMapper.search(from, to, status, wantedPhone);
     }
@@ -124,8 +132,9 @@ public class CounterReservationServiceImpl implements CounterReservationService 
     /** Cách nhau đúng bằng khoảng quy định thì được. */
     private void requireFreeSlot(Reservation reservation, Long tableId) {
         LocalDateTime arrival = reservation.getArrivalTime();
-        int clashes = reservationMapper.countBookedBetween(tableId, arrival.minus(tableGap), arrival.plus(tableGap),
-                reservation.getId());
+        LocalDateTime before = arrival.plus(tableGap);
+        int clashes = reservationMapper.countBookedBetween(tableId, arrival.minus(tableGap),
+                before.isAfter(LAST_TIME) ? LAST_TIME : before, reservation.getId());
         if (clashes > 0) {
             throw new ConflictException("TABLE_ALREADY_BOOKED",
                     "Bàn đã có lịch đặt khác cách giờ này dưới " + tableGap.toMinutes() + " phút");
