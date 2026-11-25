@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.CounterShiftMapper">
+
+    <resultMap id="counterShiftResultMap" type="org.springboot.smartdining.entity.CounterShift">
+        <id column="id" property="id"/>
+        <result column="employee_id" property="employeeId"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="ended_at" property="endedAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, employee_id, started_at, ended_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO counter_shifts (employee_id, started_at, ended_at)
+        VALUES (
+            #{employeeId},
+            <choose><when test="startedAt != null">#{startedAt}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{endedAt,jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <select id="findById" resultMap="counterShiftResultMap">
+        SELECT <include refid="columns"/>
+        FROM counter_shifts
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="counterShiftResultMap">
+        SELECT <include refid="columns"/>
+        FROM counter_shifts
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE counter_shifts
+        SET employee_id = #{employeeId},
+            ended_at = #{endedAt,jdbcType=TIMESTAMP}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM counter_shifts
+        WHERE id = #{id}
+    </delete>
+</mapper>
