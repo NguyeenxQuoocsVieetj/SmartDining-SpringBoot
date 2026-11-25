@@ -19,4 +19,7 @@ public interface TableRequestMapper {
     int deleteById(Long id);
 
     int deletePendingPaymentByTableId(Long tableId);
+
+    /** Yêu cầu thanh toán đang chờ của bàn; database bảo đảm tối đa một. */
+    TableRequest findPendingPaymentByTableId(Long tableId);
 }

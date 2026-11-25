@@ -46,6 +46,12 @@ public class TableOrderController {
         return customerOrderService.updateQuantity(token, itemId, request.quantity());
     }
 
+    /** Gửi bếp. */
+    @PostMapping("/submit")
+    public TableOrderResponse submit(@RequestHeader(TableTokens.HEADER) String token) {
+        return customerOrderService.submit(token);
+    }
+
     @DeleteMapping("/items/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeItem(@RequestHeader(TableTokens.HEADER) String token, @PathVariable Long itemId) {

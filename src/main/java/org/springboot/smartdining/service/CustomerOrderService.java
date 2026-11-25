@@ -103,6 +103,33 @@ public class CustomerOrderService {
         }
     }
 
+    /**
+     * Gửi toàn bộ giỏ xuống bếp. Có một món ngừng bán thì không gửi món nào.
+     * Tổng tiền đơn được tính lại từ các món, không cộng dồn.
+     */
+    public TableOrderResponse submit(String token) {
+        DiningTable table = customerSessionService.lockTable(token);
+        Order order = orderMapper.findUnpaidByTableId(table.getId());
+        List<OrderItem> items = order == null ? List.of() : orderItemMapper.findByOrderId(order.getId());
+        List<OrderItem> cart = items.stream()
+                .filter(item -> item.getStatus() == OrderItemStatus.CART)
+                .toList();
+        if (cart.isEmpty()) {
+            throw new ConflictException("CART_EMPTY", "Giỏ đang trống, chưa có món để gửi bếp");
+        }
+        requireAllOnSale(cart);
+
+        for (OrderItem item : cart) {
+            item.setStatus(OrderItemStatus.PENDING);
+            save(item);
+        }
+        order.setTotalAmount(OrderAmounts.sentTotal(items));
+        if (orderMapper.update(order) == 0) {
+            throw new ConflictException("Đơn vừa được người khác sửa, hãy thử lại");
+        }
+        return view(table);
+    }
+
     private Order openOrder(DiningTable table) {
         Order order = new Order();
         order.setOrderType(OrderType.DINE_IN);
@@ -132,6 +159,20 @@ public class CustomerOrderService {
     private void requireOnSale(Product product) {
         if (!menuService.isOnSale(product)) {
             throw new ConflictException("PRODUCT_UNAVAILABLE", "Món \"" + product.getName() + "\" hiện không bán");
+        }
+    }
+
+    private void requireAllOnSale(List<OrderItem> cart) {
+        List<String> unavailable = cart.stream()
+                .map(OrderItem::getProductId)
+                .distinct()
+                .map(productMapper::findById)
+                .filter(product -> !menuService.isOnSale(product))
+                .map(Product::getName)
+                .toList();
+        if (!unavailable.isEmpty()) {
+            throw new ConflictException("PRODUCT_UNAVAILABLE",
+                    "Món hiện không bán: " + String.join(", ", unavailable) + ". Hãy bỏ khỏi giỏ rồi gửi lại");
         }
     }
 

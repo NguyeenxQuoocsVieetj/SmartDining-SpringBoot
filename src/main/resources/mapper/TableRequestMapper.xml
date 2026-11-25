@@ -70,4 +70,12 @@
           AND request_type = 'PAYMENT'
           AND status = 'PENDING'
     </delete>
+
+    <select id="findPendingPaymentByTableId" resultMap="tableRequestResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_requests
+        WHERE table_id = #{tableId}
+          AND request_type = 'PAYMENT'
+          AND status = 'PENDING'
+    </select>
 </mapper>
