@@ -24,18 +24,18 @@ import java.util.Objects;
  */
 @Component
 @RequiredArgsConstructor
-public class OrderItemLocker {
+class OrderItemLocker {
 
     private final OrderItemMapper orderItemMapper;
     private final OrderMapper orderMapper;
     private final DiningTableMapper diningTableMapper;
 
-    public record LockedItem(Order order, OrderItem item) {
+    record LockedItem(Order order, OrderItem item) {
     }
 
     /** Món cùng đơn của nó, đọc sau khi đã khóa. Đơn đã đóng thì từ chối. */
     @Transactional(propagation = Propagation.MANDATORY)
-    public LockedItem lock(Long itemId) {
+    LockedItem lock(Long itemId) {
         OrderItem found = findItem(itemId);
         Order owner = orderMapper.findById(found.getOrderId());
         if (owner.getTableId() != null) {
@@ -55,7 +55,7 @@ public class OrderItemLocker {
         return new LockedItem(order, item);
     }
 
-    public static ConflictException invalidTransition(OrderItemStatus from, OrderItemStatus to) {
+    static ConflictException invalidTransition(OrderItemStatus from, OrderItemStatus to) {
         return new ConflictException("INVALID_STATUS_TRANSITION",
                 "Không chuyển được món từ " + from + " sang " + to);
     }
