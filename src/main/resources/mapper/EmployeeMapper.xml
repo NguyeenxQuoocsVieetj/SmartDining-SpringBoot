@@ -71,4 +71,10 @@
         FROM employees
         WHERE role = 'ADMIN'
     </select>
+
+    <select id="findByUsername" resultMap="employeeResultMap">
+        SELECT <include refid="columns"/>
+        FROM employees
+        WHERE username = #{username}
+    </select>
 </mapper>

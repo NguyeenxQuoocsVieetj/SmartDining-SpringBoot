@@ -21,4 +21,7 @@ public interface EmployeeMapper {
 
     /** Id tài khoản ADMIN, null nếu chưa có. */
     Long findAdminId();
+
+    /** Tìm theo username, không phân biệt hoa thường (theo bảng mã của cột). */
+    Employee findByUsername(String username);
 }

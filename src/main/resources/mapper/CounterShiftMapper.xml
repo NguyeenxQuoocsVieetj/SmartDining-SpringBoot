@@ -45,4 +45,10 @@
         DELETE FROM counter_shifts
         WHERE id = #{id}
     </delete>
+
+    <select id="findOpen" resultMap="counterShiftResultMap">
+        SELECT <include refid="columns"/>
+        FROM counter_shifts
+        WHERE ended_at IS NULL
+    </select>
 </mapper>

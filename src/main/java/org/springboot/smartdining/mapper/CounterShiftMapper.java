@@ -17,4 +17,7 @@ public interface CounterShiftMapper {
     int update(CounterShift counterShift);
 
     int deleteById(Long id);
+
+    /** Ca đang mở, null nếu không có. Database bảo đảm tối đa một ca. */
+    CounterShift findOpen();
 }
