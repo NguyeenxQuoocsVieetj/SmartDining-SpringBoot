@@ -70,4 +70,45 @@
         WHERE phone = #{phone}
           AND status = 'PENDING'
     </select>
+
+    <resultMap id="counterReservationResultMap" type="org.springboot.smartdining.dto.CounterReservationResponse">
+        <constructor>
+            <idArg column="id" javaType="long"/>
+            <arg column="customer_name" javaType="string"/>
+            <arg column="phone" javaType="string"/>
+            <arg column="arrival_time" javaType="java.time.LocalDateTime"/>
+            <arg column="table_id" javaType="long"/>
+            <arg column="table_name" javaType="string"/>
+            <arg column="status" javaType="org.springboot.smartdining.enums.ReservationStatus"/>
+            <arg column="confirmed_by" javaType="long"/>
+            <arg column="confirmed_at" javaType="java.time.LocalDateTime"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="counterSelect">
+        SELECT r.id            AS id,
+               r.customer_name AS customer_name,
+               r.phone         AS phone,
+               r.arrival_time  AS arrival_time,
+               r.table_id      AS table_id,
+               t.name          AS table_name,
+               r.status        AS status,
+               r.confirmed_by  AS confirmed_by,
+               r.confirmed_at  AS confirmed_at,
+               r.created_at    AS created_at
+        FROM reservations r
+        LEFT JOIN dining_tables t ON t.id = r.table_id
+    </sql>
+
+    <select id="search" resultMap="counterReservationResultMap">
+        <include refid="counterSelect"/>
+        <where>
+            <if test="from != null">AND r.arrival_time &gt;= #{from}</if>
+            <if test="to != null">AND r.arrival_time &lt; #{to}</if>
+            <if test="status != null">AND r.status = #{status}</if>
+            <if test="phone != null">AND r.phone = #{phone}</if>
+        </where>
+        ORDER BY r.arrival_time, r.id
+    </select>
 </mapper>
