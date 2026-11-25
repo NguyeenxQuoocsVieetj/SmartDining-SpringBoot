@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.ReportMapper">
+
+    <resultMap id="dailyResultMap" type="org.springboot.smartdining.dto.RevenueReportResponse$Daily">
+        <constructor>
+            <idArg column="biz_date" javaType="java.time.LocalDate"/>
+            <arg column="collected" javaType="java.math.BigDecimal"/>
+            <arg column="refunded" javaType="java.math.BigDecimal"/>
+            <arg column="revenue" javaType="java.math.BigDecimal"/>
+            <arg column="invoice_count" javaType="_int"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findDailyMoney" resultMap="dailyResultMap">
+        SELECT money.biz_date                          AS biz_date,
+               SUM(money.collected)                    AS collected,
+               SUM(money.refunded)                     AS refunded,
+               SUM(money.collected - money.refunded)   AS revenue,
+               SUM(money.invoices)                     AS invoice_count
+        FROM (
+            SELECT CAST(paid_at AS DATE) AS biz_date, amount AS collected,
+                   CAST(0 AS DECIMAL(13,2)) AS refunded, 1 AS invoices
+            FROM payments
+            WHERE status = 'COMPLETED'
+            <if test="from != null">AND paid_at &gt;= #{from}</if>
+            <if test="until != null">AND paid_at &lt; #{until}</if>
+            UNION ALL
+            SELECT CAST(refunded_at AS DATE) AS biz_date, CAST(0 AS DECIMAL(13,2)) AS collected,
+                   amount AS refunded, 0 AS invoices
+            FROM refunds
+            <where>
+                <if test="from != null">AND refunded_at &gt;= #{from}</if>
+                <if test="until != null">AND refunded_at &lt; #{until}</if>
+            </where>
+        ) money
+        GROUP BY money.biz_date
+        ORDER BY money.biz_date
+    </select>
+
+    <resultMap id="overviewCountsResultMap" type="org.springboot.smartdining.mapper.ReportRows$OverviewCounts">
+        <constructor>
+            <arg column="open_tables" javaType="_int"/>
+            <arg column="waiting_tables" javaType="_int"/>
+            <arg column="active_employees" javaType="_int"/>
+            <arg column="pending_requests" javaType="_int"/>
+        </constructor>
+    </resultMap>
+
+    <select id="countOverview" resultMap="overviewCountsResultMap">
+        SELECT (SELECT COUNT(*) FROM orders WHERE status = 'UNPAID' AND order_type = 'DINE_IN') AS open_tables,
+               (SELECT COUNT(*) FROM dining_tables WHERE status = 'WAITING_PAYMENT')           AS waiting_tables,
+               (SELECT COUNT(*) FROM employees WHERE status = 'ACTIVE')                        AS active_employees,
+               (SELECT COUNT(*) FROM table_requests WHERE status = 'PENDING')                  AS pending_requests
+    </select>
+
+    <resultMap id="paidResultMap" type="org.springboot.smartdining.dto.PaidDetailResponse">
+        <constructor>
+            <idArg column="payment_id" javaType="long"/>
+            <arg column="order_id" javaType="long"/>
+            <arg column="order_type" javaType="org.springboot.smartdining.enums.OrderType"/>
+            <arg column="table_name" javaType="string"/>
+            <arg column="paid_at" javaType="java.time.LocalDateTime"/>
+            <arg column="amount" javaType="java.math.BigDecimal"/>
+            <arg column="refunded" javaType="java.math.BigDecimal"/>
+            <arg column="method" javaType="org.springboot.smartdining.enums.PaymentMethod"/>
+            <arg column="cashier_name" javaType="string"/>
+            <arg column="has_proof" javaType="_boolean"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findPayments" resultMap="paidResultMap">
+        SELECT pay.id            AS payment_id,
+               o.id              AS order_id,
+               o.order_type      AS order_type,
+               CASE WHEN o.order_type = 'TAKEAWAY' THEN CONCAT('Mang về #', o.pickup_code)
+                    ELSE t.name END AS table_name,
+               pay.paid_at       AS paid_at,
+               pay.amount        AS amount,
+               (SELECT COALESCE(SUM(r.amount), 0) FROM refunds r WHERE r.payment_id = pay.id) AS refunded,
+               pay.method        AS method,
+               e.full_name       AS cashier_name,
+               CASE WHEN pay.proof_image_path IS NULL THEN 0 ELSE 1 END AS has_proof
+        FROM payments pay
+        JOIN orders o         ON o.id = pay.order_id
+        JOIN counter_shifts s ON s.id = pay.counter_shift_id
+        JOIN employees e      ON e.id = s.employee_id
+        LEFT JOIN dining_tables t ON t.id = o.table_id
+        WHERE pay.status = 'COMPLETED'
+        <if test="from != null">AND pay.paid_at &gt;= #{from}</if>
+        <if test="until != null">AND pay.paid_at &lt; #{until}</if>
+        ORDER BY pay.paid_at DESC, pay.id DESC
+    </select>
+
+    <resultMap id="openOrderResultMap" type="org.springboot.smartdining.dto.OpenOrderDetailResponse">
+        <constructor>
+            <idArg column="order_id" javaType="long"/>
+            <arg column="table_id" javaType="long"/>
+            <arg column="table_name" javaType="string"/>
+            <arg column="table_status" javaType="org.springboot.smartdining.enums.TableStatus"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="total_amount" javaType="java.math.BigDecimal"/>
+            <arg column="sent_count" javaType="_int"/>
+            <arg column="served_count" javaType="_int"/>
+            <arg column="cart_count" javaType="_int"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findOpenOrders" resultMap="openOrderResultMap">
+        SELECT o.id         AS order_id,
+               t.id         AS table_id,
+               t.name       AS table_name,
+               t.status     AS table_status,
+               o.created_at AS created_at,
+               SUM(CASE WHEN oi.status NOT IN ('CART', 'CANCELLED') THEN oi.quantity * oi.unit_price
+                        ELSE CAST(0 AS DECIMAL(13,2)) END) AS total_amount,
+               SUM(CASE WHEN oi.status NOT IN ('CART', 'CANCELLED') THEN oi.quantity ELSE 0 END) AS sent_count,
+               SUM(CASE WHEN oi.status = 'SERVED' THEN oi.quantity ELSE 0 END) AS served_count,
+               SUM(CASE WHEN oi.status = 'CART' THEN oi.quantity ELSE 0 END)   AS cart_count
+        FROM orders o
+        JOIN dining_tables t ON t.id = o.table_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.status = 'UNPAID'
+          AND o.order_type = 'DINE_IN'
+        <if test="waitingOnly">AND t.status = 'WAITING_PAYMENT'</if>
+        GROUP BY o.id, t.id, t.name, t.status, o.created_at
+        ORDER BY o.created_at, o.id
+    </select>
+
+    <resultMap id="staffResultMap" type="org.springboot.smartdining.mapper.ReportRows$Staff">
+        <constructor>
+            <idArg column="id" javaType="long"/>
+            <arg column="full_name" javaType="string"/>
+            <arg column="username" javaType="string"/>
+            <arg column="role" javaType="org.springboot.smartdining.enums.EmployeeRole"/>
+            <arg column="status" javaType="org.springboot.smartdining.enums.EmployeeStatus"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findStaff" resultMap="staffResultMap">
+        SELECT id, full_name, username, role, status
+        FROM employees
+        ORDER BY role, full_name, id
+    </select>
+</mapper>
