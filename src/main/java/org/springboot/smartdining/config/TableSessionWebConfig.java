@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.security.TableTokens;
 import org.springboot.smartdining.service.CustomerSessionService;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -25,6 +26,10 @@ public class TableSessionWebConfig implements WebMvcConfigurer {
         registry.addInterceptor(new HandlerInterceptor() {
             @Override
             public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+                // Trình duyệt gửi preflight CORS không kèm header riêng, để Spring tự xử lý
+                if (CorsUtils.isPreFlightRequest(request)) {
+                    return true;
+                }
                 customerSessionService.requireSession(request.getHeader(TableTokens.HEADER));
                 return true;
             }
