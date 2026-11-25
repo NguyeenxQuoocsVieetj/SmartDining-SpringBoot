@@ -11,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.springboot.smartdining.service.ServiceChecks.require;
-import static org.springboot.smartdining.service.ServiceChecks.requireText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.require;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 
 @Service
 @RequiredArgsConstructor

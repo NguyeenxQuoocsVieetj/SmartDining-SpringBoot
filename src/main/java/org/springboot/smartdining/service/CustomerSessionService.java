@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static org.springboot.smartdining.service.ServiceChecks.now;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 
 /** Phiên bàn của khách: mở bằng mã QR, xác định bàn bằng token. */
 @Service

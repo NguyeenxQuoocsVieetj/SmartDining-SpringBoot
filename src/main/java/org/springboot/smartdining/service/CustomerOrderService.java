@@ -17,6 +17,7 @@ import org.springboot.smartdining.mapper.OrderItemMapper;
 import org.springboot.smartdining.mapper.OrderMapper;
 import org.springboot.smartdining.mapper.ProductMapper;
 import org.springboot.smartdining.mapper.TableRequestMapper;
+import org.springboot.smartdining.service.impl.OrderAmounts;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.springboot.smartdining.service.ServiceChecks.now;
-import static org.springboot.smartdining.service.ServiceChecks.optionalText;
-import static org.springboot.smartdining.service.ServiceChecks.require;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
+import static org.springboot.smartdining.service.impl.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.require;
 
 /**
  * Khách gọi món tại bàn. Bàn luôn lấy từ token phiên.

@@ -12,9 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.springboot.smartdining.service.ServiceChecks.now;
-import static org.springboot.smartdining.service.ServiceChecks.require;
-import static org.springboot.smartdining.service.ServiceChecks.requireReference;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
+import static org.springboot.smartdining.service.impl.ServiceChecks.require;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireReference;
 
 @Service
 @RequiredArgsConstructor

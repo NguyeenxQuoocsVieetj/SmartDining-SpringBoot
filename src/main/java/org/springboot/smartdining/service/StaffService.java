@@ -25,6 +25,8 @@ import org.springboot.smartdining.mapper.ProductMapper;
 import org.springboot.smartdining.mapper.StaffMapper;
 import org.springboot.smartdining.mapper.TableRequestMapper;
 import org.springboot.smartdining.security.CurrentUser;
+import org.springboot.smartdining.service.impl.OrderAmounts;
+import org.springboot.smartdining.service.impl.OrderItemLocker;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +37,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.springboot.smartdining.service.ServiceChecks.now;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 
 /** Màn hình của nhân viên phục vụ. */
 @Service

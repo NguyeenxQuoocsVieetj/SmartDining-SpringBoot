@@ -15,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springboot.smartdining.service.ServiceChecks.optionalMoney;
-import static org.springboot.smartdining.service.ServiceChecks.optionalText;
-import static org.springboot.smartdining.service.ServiceChecks.orNow;
-import static org.springboot.smartdining.service.ServiceChecks.require;
-import static org.springboot.smartdining.service.ServiceChecks.requireReference;
+import static org.springboot.smartdining.service.impl.ServiceChecks.optionalMoney;
+import static org.springboot.smartdining.service.impl.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.orNow;
+import static org.springboot.smartdining.service.impl.ServiceChecks.require;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireReference;
 
 @Service
 @RequiredArgsConstructor

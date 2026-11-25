@@ -1,4 +1,4 @@
-package org.springboot.smartdining.service;
+package org.springboot.smartdining.service.impl;
 
 import org.springboot.smartdining.entity.OrderItem;
 import org.springboot.smartdining.enums.OrderItemStatus;
@@ -8,21 +8,21 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /** Cách tính tiền của đơn, luôn tính lại từ các món chứ không cộng dồn. */
-final class OrderAmounts {
+public final class OrderAmounts {
 
     private OrderAmounts() {
     }
 
-    static BigDecimal amountOf(OrderItem item) {
+    public static BigDecimal amountOf(OrderItem item) {
         return item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
     }
 
     /** Tổng tiền các món đã gửi bếp: bỏ món còn trong giỏ và món đã hủy. */
-    static BigDecimal sentTotal(List<OrderItem> items) {
+    public static BigDecimal sentTotal(List<OrderItem> items) {
         return sum(items, status -> status != OrderItemStatus.CART && status != OrderItemStatus.CANCELLED);
     }
 
-    static BigDecimal cartTotal(List<OrderItem> items) {
+    public static BigDecimal cartTotal(List<OrderItem> items) {
         return sum(items, status -> status == OrderItemStatus.CART);
     }
 

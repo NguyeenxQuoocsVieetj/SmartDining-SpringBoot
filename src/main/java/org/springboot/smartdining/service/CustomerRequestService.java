@@ -14,9 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springboot.smartdining.service.ServiceChecks.now;
-import static org.springboot.smartdining.service.ServiceChecks.optionalText;
-import static org.springboot.smartdining.service.ServiceChecks.requireText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
+import static org.springboot.smartdining.service.impl.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 
 /** Khách tại bàn yêu cầu thanh toán hoặc gọi nhân viên. */
 @Service

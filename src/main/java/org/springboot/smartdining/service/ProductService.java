@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.springboot.smartdining.service.ServiceChecks.optionalText;
-import static org.springboot.smartdining.service.ServiceChecks.require;
-import static org.springboot.smartdining.service.ServiceChecks.requireMoney;
-import static org.springboot.smartdining.service.ServiceChecks.requireReference;
-import static org.springboot.smartdining.service.ServiceChecks.requireText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.impl.ServiceChecks.require;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireMoney;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireReference;
+import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 
 @Service
 @RequiredArgsConstructor
