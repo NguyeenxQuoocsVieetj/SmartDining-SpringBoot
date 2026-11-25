@@ -80,4 +80,11 @@
         DELETE FROM orders
         WHERE id = #{id}
     </delete>
+
+    <select id="countUnpaidByTableId" resultType="int">
+        SELECT COUNT(*)
+        FROM orders
+        WHERE table_id = #{tableId}
+          AND status = 'UNPAID'
+    </select>
 </mapper>

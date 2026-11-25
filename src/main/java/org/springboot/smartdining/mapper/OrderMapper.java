@@ -36,4 +36,6 @@ public interface OrderMapper {
     }
 
     int deleteById(Long id);
+
+    int countUnpaidByTableId(Long tableId);
 }
