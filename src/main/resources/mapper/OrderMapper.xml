@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.OrderMapper">
+
+    <resultMap id="orderResultMap" type="org.springboot.smartdining.entity.Order">
+        <id column="id" property="id"/>
+        <result column="order_type" property="orderType"/>
+        <result column="table_id" property="tableId"/>
+        <result column="cashier_id" property="cashierId"/>
+        <result column="status" property="status"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="note" property="note"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="customer_phone" property="customerPhone"/>
+        <result column="pickup_date" property="pickupDate"/>
+        <result column="pickup_code" property="pickupCode"/>
+        <result column="pickup_time" property="pickupTime"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, order_type, table_id, cashier_id, status, total_amount, note, customer_name, customer_phone,
+        pickup_date, pickup_code, pickup_time, created_at, version
+    </sql>
+
+    <insert id="insertRow" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO orders (order_type, table_id, cashier_id, status, total_amount, note, customer_name,
+                            customer_phone, pickup_date, pickup_code, pickup_time, created_at, version)
+        VALUES (
+            <choose><when test="orderType != null">#{orderType}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{tableId,jdbcType=BIGINT},
+            #{cashierId,jdbcType=BIGINT},
+            <choose><when test="status != null">#{status}</when><otherwise>DEFAULT</otherwise></choose>,
+            <choose><when test="totalAmount != null">#{totalAmount}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{note,jdbcType=VARCHAR},
+            #{customerName,jdbcType=VARCHAR},
+            #{customerPhone,jdbcType=VARCHAR},
+            #{pickupDate,jdbcType=DATE},
+            #{pickupCode,jdbcType=INTEGER},
+            #{pickupTime,jdbcType=TIMESTAMP},
+            <choose><when test="createdAt != null">#{createdAt}</when><otherwise>DEFAULT</otherwise></choose>,
+            <choose><when test="version != null">#{version}</when><otherwise>DEFAULT</otherwise></choose>
+        )
+    </insert>
+
+    <select id="findById" resultMap="orderResultMap">
+        SELECT <include refid="columns"/>
+        FROM orders
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="orderResultMap">
+        SELECT <include refid="columns"/>
+        FROM orders
+        ORDER BY id
+    </select>
+
+    <update id="updateRow">
+        UPDATE orders
+        <set>
+            <if test="orderType != null">order_type = #{orderType},</if>
+            table_id = #{tableId,jdbcType=BIGINT},
+            cashier_id = #{cashierId,jdbcType=BIGINT},
+            <if test="status != null">status = #{status},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            note = #{note,jdbcType=VARCHAR},
+            customer_name = #{customerName,jdbcType=VARCHAR},
+            customer_phone = #{customerPhone,jdbcType=VARCHAR},
+            pickup_date = #{pickupDate,jdbcType=DATE},
+            pickup_code = #{pickupCode,jdbcType=INTEGER},
+            pickup_time = #{pickupTime,jdbcType=TIMESTAMP},
+            version = version + 1,
+        </set>
+        WHERE id = #{id}
+          AND version = #{version,jdbcType=INTEGER}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM orders
+        WHERE id = #{id}
+    </delete>
+</mapper>

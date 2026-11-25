@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.DailyPickupCounterMapper">
+
+    <resultMap id="dailyPickupCounterResultMap" type="org.springboot.smartdining.entity.DailyPickupCounter">
+        <id column="business_date" property="businessDate"/>
+        <result column="last_code" property="lastCode"/>
+    </resultMap>
+
+    <sql id="columns">
+        business_date, last_code
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO daily_pickup_counters (business_date, last_code)
+        VALUES (#{businessDate}, #{lastCode})
+    </insert>
+
+    <select id="findById" resultMap="dailyPickupCounterResultMap">
+        SELECT <include refid="columns"/>
+        FROM daily_pickup_counters
+        WHERE business_date = #{businessDate}
+    </select>
+
+    <select id="findAll" resultMap="dailyPickupCounterResultMap">
+        SELECT <include refid="columns"/>
+        FROM daily_pickup_counters
+        ORDER BY business_date
+    </select>
+
+    <update id="update">
+        UPDATE daily_pickup_counters
+        SET last_code = #{lastCode}
+        WHERE business_date = #{businessDate}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM daily_pickup_counters
+        WHERE business_date = #{businessDate}
+    </delete>
+</mapper>
