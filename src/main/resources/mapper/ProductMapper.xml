@@ -63,4 +63,13 @@
         FROM products
         WHERE category_id = #{categoryId}
     </select>
+
+    <select id="findOnSale" resultMap="productResultMap">
+        SELECT p.id, p.category_id, p.name, p.image_url, p.description, p.price, p.status
+        FROM products p
+        JOIN categories c ON c.id = p.category_id
+        WHERE p.status = 'AVAILABLE'
+          AND c.status = 'ACTIVE'
+        ORDER BY p.category_id, p.id
+    </select>
 </mapper>

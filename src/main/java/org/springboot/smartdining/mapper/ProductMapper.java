@@ -19,4 +19,7 @@ public interface ProductMapper {
     int deleteById(Long id);
 
     int countByCategoryId(Long categoryId);
+
+    /** Món đang bán thuộc danh mục đang bán (MNU-2), xếp theo danh mục rồi theo id. */
+    List<Product> findOnSale();
 }
