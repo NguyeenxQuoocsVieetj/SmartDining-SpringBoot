@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
 
@@ -26,7 +27,7 @@ public class TableSessionService {
     public TableSession create(TableSession input) {
         TableSession session = fromInput(input);
         session.setTokenHash(TableTokens.hash(TableTokens.newToken()));
-        session.setCreatedAt(input.getCreatedAt());
+        session.setCreatedAt(orNow(input.getCreatedAt()));
         tableSessionMapper.insert(session);
         return findExisting(session.getId());
     }

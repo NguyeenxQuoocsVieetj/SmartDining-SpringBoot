@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.now;
 import static org.springboot.smartdining.service.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
 import static org.springboot.smartdining.service.ServiceChecks.requireText;
@@ -30,7 +31,7 @@ public class TableRequestService {
 
     public TableRequest create(TableRequest input) {
         TableRequest request = fromInput(input);
-        request.setRequestedAt(input.getRequestedAt());
+        request.setRequestedAt(orNow(input.getRequestedAt()));
         fillCompletion(request, request.getStatus());
         tableRequestMapper.insert(request);
         return findExisting(request.getId());

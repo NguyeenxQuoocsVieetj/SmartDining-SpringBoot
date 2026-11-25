@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.springboot.smartdining.service.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireText;
 
@@ -35,7 +36,7 @@ public class EmployeeService {
     public Employee create(Employee input, String rawPassword) {
         Employee employee = fromInput(input);
         employee.setPasswordHash(hash(require(rawPassword, "mật khẩu")));
-        employee.setCreatedAt(input.getCreatedAt());
+        employee.setCreatedAt(orNow(input.getCreatedAt()));
         employeeMapper.insert(employee);
         return findExisting(employee.getId());
     }

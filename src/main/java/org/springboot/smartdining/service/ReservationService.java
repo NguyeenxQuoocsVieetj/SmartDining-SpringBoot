@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.now;
 import static org.springboot.smartdining.service.ServiceChecks.optionalReference;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireText;
 
@@ -28,7 +29,7 @@ public class ReservationService {
 
     public Reservation create(Reservation input) {
         Reservation reservation = fromInput(input);
-        reservation.setCreatedAt(input.getCreatedAt());
+        reservation.setCreatedAt(orNow(input.getCreatedAt()));
         fillConfirmation(reservation, reservation.getStatus());
         reservationMapper.insert(reservation);
         return findExisting(reservation.getId());

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireMoney;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
@@ -29,7 +30,7 @@ public class PaymentService {
 
     public Payment create(Payment input) {
         Payment payment = fromInput(input);
-        payment.setPaidAt(input.getPaidAt());
+        payment.setPaidAt(orNow(input.getPaidAt()));
         paymentMapper.insert(payment);
         return findExisting(payment.getId());
     }

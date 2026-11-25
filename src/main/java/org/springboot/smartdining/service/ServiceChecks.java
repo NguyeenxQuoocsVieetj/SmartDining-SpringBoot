@@ -73,4 +73,12 @@ final class ServiceChecks {
     static LocalDateTime now() {
         return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
+
+    /**
+     * Mốc tạo bản ghi: dùng giá trị được đưa vào, không có thì lấy giờ ứng dụng.
+     * Không để database tự điền CURRENT_TIMESTAMP vì múi giờ của nó có thể khác (ví dụ UTC).
+     */
+    static LocalDateTime orNow(LocalDateTime value) {
+        return value != null ? value : now();
+    }
 }

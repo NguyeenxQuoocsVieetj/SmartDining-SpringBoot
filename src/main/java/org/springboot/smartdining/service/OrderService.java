@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.optionalMoney;
 import static org.springboot.smartdining.service.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
 
@@ -34,7 +35,7 @@ public class OrderService {
         require(input, "dữ liệu đơn");
         OrderType type = input.getOrderType() != null ? input.getOrderType() : OrderType.DINE_IN;
         Order order = fromInput(input, type);
-        order.setCreatedAt(input.getCreatedAt());
+        order.setCreatedAt(orNow(input.getCreatedAt()));
         if (type == OrderType.TAKEAWAY) {
             LocalDate today = LocalDate.now();
             order.setPickupDate(today);

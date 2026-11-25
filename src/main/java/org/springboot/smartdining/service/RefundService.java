@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.optionalReference;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireMoney;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
@@ -31,7 +32,7 @@ public class RefundService {
 
     public Refund create(Refund input) {
         Refund refund = fromInput(input);
-        refund.setRefundedAt(input.getRefundedAt());
+        refund.setRefundedAt(orNow(input.getRefundedAt()));
         refundMapper.insert(refund);
         return findExisting(refund.getId());
     }

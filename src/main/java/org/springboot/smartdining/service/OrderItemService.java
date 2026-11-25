@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.now;
 import static org.springboot.smartdining.service.ServiceChecks.optionalText;
+import static org.springboot.smartdining.service.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.ServiceChecks.require;
 import static org.springboot.smartdining.service.ServiceChecks.requireMoney;
 import static org.springboot.smartdining.service.ServiceChecks.requireReference;
@@ -33,7 +34,7 @@ public class OrderItemService {
 
     public OrderItem create(OrderItem input) {
         OrderItem item = fromInput(input);
-        item.setCreatedAt(input.getCreatedAt());
+        item.setCreatedAt(orNow(input.getCreatedAt()));
         fillByStatus(item, item.getStatus());
         orderItemMapper.insert(item);
         return findExisting(item.getId());
