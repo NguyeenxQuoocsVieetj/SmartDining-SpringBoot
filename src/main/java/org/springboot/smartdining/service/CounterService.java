@@ -2,6 +2,8 @@ package org.springboot.smartdining.service;
 
 import org.springboot.smartdining.dto.CounterEmployeeResponse;
 import org.springboot.smartdining.dto.CounterSessionResponse;
+import org.springboot.smartdining.dto.SendCodeResponse;
+import org.springboot.smartdining.enums.CodeChannel;
 
 /** Màn hình quầy: ai đang trực và vào, rời ca. */
 public interface CounterService {
@@ -14,4 +16,7 @@ public interface CounterService {
      * và chỉ khi chưa có ca nào mở.
      */
     CounterEmployeeResponse findCandidate(String username);
+
+    /** Phát mã 6 số và gửi qua kênh đã chọn (CNT-3, CNT-4). */
+    SendCodeResponse sendCode(String username, CodeChannel channel);
 }

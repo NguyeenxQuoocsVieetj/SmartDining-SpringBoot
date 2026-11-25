@@ -52,6 +52,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.UNAUTHORIZED, "TABLE_SESSION_INVALID", ex.getMessage());
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ProblemDetail> handleTooManyRequests(TooManyRequestsException ex) {
+        return problem(HttpStatus.TOO_MANY_REQUESTS, ex.getCode(), ex.getMessage());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ProblemDetail> handleIntegrity(DataIntegrityViolationException ex) {
         return problem(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION",
