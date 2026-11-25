@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.CategoryMapper">
+
+    <resultMap id="categoryResultMap" type="org.springboot.smartdining.entity.Category">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, name, status
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO categories (name, status)
+        VALUES (
+            #{name},
+            <choose><when test="status != null">#{status}</when><otherwise>DEFAULT</otherwise></choose>
+        )
+    </insert>
+
+    <select id="findById" resultMap="categoryResultMap">
+        SELECT <include refid="columns"/>
+        FROM categories
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="categoryResultMap">
+        SELECT <include refid="columns"/>
+        FROM categories
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE categories
+        <set>
+            name = #{name},
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM categories
+        WHERE id = #{id}
+    </delete>
+</mapper>
