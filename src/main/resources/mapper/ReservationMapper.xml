@@ -63,4 +63,11 @@
         DELETE FROM reservations
         WHERE id = #{id}
     </delete>
+
+    <select id="countPendingByPhone" resultType="int">
+        SELECT COUNT(*)
+        FROM reservations
+        WHERE phone = #{phone}
+          AND status = 'PENDING'
+    </select>
 </mapper>

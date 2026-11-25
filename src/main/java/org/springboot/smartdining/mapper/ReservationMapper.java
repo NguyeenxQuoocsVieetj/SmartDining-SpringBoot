@@ -17,4 +17,6 @@ public interface ReservationMapper {
     int update(Reservation reservation);
 
     int deleteById(Long id);
+
+    int countPendingByPhone(String phone);
 }

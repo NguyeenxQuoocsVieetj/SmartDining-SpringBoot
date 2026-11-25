@@ -94,19 +94,10 @@ public class ReservationServiceImpl implements ReservationService {
         require(input, "dữ liệu lịch đặt");
         Reservation reservation = new Reservation();
         reservation.setCustomerName(requireText(input.getCustomerName(), "customerName", 100));
-        reservation.setPhone(requireText(normalizePhone(input.getPhone()), "phone", 15));
+        reservation.setPhone(requireText(PhoneNumbers.normalize(input.getPhone()), "phone", 15));
         reservation.setArrivalTime(require(input.getArrivalTime(), "arrivalTime"));
         reservation.setTableId(optionalReference(input.getTableId(), diningTableMapper::findById, "tableId"));
         reservation.setStatus(input.getStatus());
         return reservation;
-    }
-
-    /** Bỏ khoảng trắng, dấu chấm, gạch; đổi đầu +84 thành 0. */
-    private static String normalizePhone(String phone) {
-        if (phone == null) {
-            return null;
-        }
-        String digits = phone.replaceAll("[\\s\\u00A0.\\-]", "");
-        return digits.startsWith("+84") ? "0" + digits.substring(3) : digits;
     }
 }
