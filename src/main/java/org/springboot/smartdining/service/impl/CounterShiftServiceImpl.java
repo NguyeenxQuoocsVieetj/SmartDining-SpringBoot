@@ -74,10 +74,13 @@ public class CounterShiftServiceImpl implements CounterShiftService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CounterShift close(Long id) {
         shiftWriteLock.lockUntilTransactionEnds();
-        CounterShift shift = findExisting(id);
-        // Câu UPDATE chỉ đóng ca còn mở, nên hai người đóng cùng lúc thì một người nhận 409
-        if (counterShiftMapper.close(id, closingTime(shift.getStartedAt())) == 0) {
-            findExisting(id);
+        // Khóa bản ghi ca trước khi lấy giờ, để thao tác quầy đang chạy xong rồi mới chốt giờ đóng
+        CounterShift shift = counterShiftMapper.findByIdForUpdate(id);
+        if (shift == null) {
+            throw notFound(id);
+        }
+        if (shift.getEndedAt() != null
+                || counterShiftMapper.close(id, closingTime(shift.getStartedAt())) == 0) {
             throw new ConflictException("SHIFT_ALREADY_CLOSED", "Ca quầy đã đóng");
         }
         return findExisting(id);
@@ -86,9 +89,13 @@ public class CounterShiftServiceImpl implements CounterShiftService {
     private CounterShift findExisting(Long id) {
         CounterShift shift = counterShiftMapper.findById(id);
         if (shift == null) {
-            throw new ResourceNotFoundException("Không tìm thấy ca quầy " + id);
+            throw notFound(id);
         }
         return shift;
+    }
+
+    private static ResourceNotFoundException notFound(Long id) {
+        return new ResourceNotFoundException("Không tìm thấy ca quầy " + id);
     }
 
     private CounterShift fromInput(CounterShift input, LocalDateTime startedAt) {

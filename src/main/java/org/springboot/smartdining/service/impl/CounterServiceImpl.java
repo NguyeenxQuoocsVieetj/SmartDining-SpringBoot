@@ -102,8 +102,11 @@ public class CounterServiceImpl implements CounterService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void closeCurrentShift() {
         shiftWriteLock.lockUntilTransactionEnds();
-        CounterShift shift = requireOpenShift();
-        if (counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
+        // Khóa bản ghi ca trước khi lấy giờ: thao tác quầy đang chạy phải xong rồi mới chốt giờ đóng,
+        // nếu không ca sẽ đóng sớm hơn việc được ghi trong chính ca đó
+        CounterShift shift = counterShiftMapper.findByIdForUpdate(requireOpenShift().getId());
+        if (shift == null || shift.getEndedAt() != null
+                || counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
             throw noOpenShift();
         }
     }
