@@ -142,4 +142,152 @@
         FROM employees
         ORDER BY role, full_name, id
     </select>
+
+    <resultMap id="bestSellerResultMap" type="org.springboot.smartdining.dto.RevenueReportResponse$BestSeller">
+        <constructor>
+            <arg column="product_name" javaType="string"/>
+            <arg column="total_quantity" javaType="_int"/>
+            <arg column="total_revenue" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findBestSellers" resultMap="bestSellerResultMap">
+        SELECT p.name                             AS product_name,
+               SUM(oi.quantity)                   AS total_quantity,
+               SUM(oi.quantity * oi.unit_price)   AS total_revenue
+        FROM payments pay
+        JOIN order_items oi ON oi.order_id = pay.order_id
+        JOIN products p     ON p.id = oi.product_id
+        WHERE pay.status = 'COMPLETED'
+          AND oi.status NOT IN ('CART', 'CANCELLED')
+        <if test="from != null">AND pay.paid_at &gt;= #{from}</if>
+        <if test="until != null">AND pay.paid_at &lt; #{until}</if>
+        GROUP BY p.id, p.name
+        ORDER BY total_quantity DESC, total_revenue DESC, p.name, p.id
+        LIMIT 10
+    </select>
+
+    <resultMap id="collectedResultMap" type="org.springboot.smartdining.mapper.ReportRows$Collected">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="invoice_count" javaType="_int"/>
+            <arg column="total" javaType="java.math.BigDecimal"/>
+            <arg column="cash" javaType="java.math.BigDecimal"/>
+            <arg column="transfer" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <select id="sumCollectedByCashier" resultMap="collectedResultMap">
+        SELECT s.employee_id   AS employee_id,
+               COUNT(*)        AS invoice_count,
+               SUM(pay.amount) AS total,
+               SUM(CASE WHEN pay.method = 'CASH' THEN pay.amount ELSE CAST(0 AS DECIMAL(13,2)) END) AS cash,
+               SUM(CASE WHEN pay.method = 'TRANSFER' THEN pay.amount ELSE CAST(0 AS DECIMAL(13,2)) END) AS transfer
+        FROM payments pay
+        JOIN counter_shifts s ON s.id = pay.counter_shift_id
+        WHERE pay.status = 'COMPLETED'
+        <if test="from != null">AND pay.paid_at &gt;= #{from}</if>
+        <if test="until != null">AND pay.paid_at &lt; #{until}</if>
+        GROUP BY s.employee_id
+    </select>
+
+    <resultMap id="refundedResultMap" type="org.springboot.smartdining.mapper.ReportRows$Refunded">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="total" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <select id="sumRefundedByCashier" resultMap="refundedResultMap">
+        SELECT s.employee_id AS employee_id,
+               SUM(r.amount) AS total
+        FROM refunds r
+        JOIN counter_shifts s ON s.id = r.counter_shift_id
+        <where>
+            <if test="from != null">AND r.refunded_at &gt;= #{from}</if>
+            <if test="until != null">AND r.refunded_at &lt; #{until}</if>
+        </where>
+        GROUP BY s.employee_id
+    </select>
+
+    <resultMap id="requestsResultMap" type="org.springboot.smartdining.mapper.ReportRows$Requests">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="handled" javaType="_int"/>
+            <arg column="total_seconds" javaType="_long"/>
+        </constructor>
+    </resultMap>
+
+    <select id="sumRequestsByEmployee" resultMap="requestsResultMap">
+        SELECT completed_by AS employee_id,
+               COUNT(*)     AS handled,
+               SUM(TIMESTAMPDIFF(SECOND, requested_at, completed_at)) AS total_seconds
+        FROM table_requests
+        WHERE status = 'COMPLETED'
+          AND completed_by IS NOT NULL
+          AND completed_at IS NOT NULL
+        <if test="from != null">AND completed_at &gt;= #{from}</if>
+        <if test="until != null">AND completed_at &lt; #{until}</if>
+        GROUP BY completed_by
+    </select>
+
+    <resultMap id="servedResultMap" type="org.springboot.smartdining.mapper.ReportRows$Served">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="portions" javaType="_int"/>
+        </constructor>
+    </resultMap>
+
+    <select id="sumServedByEmployee" resultMap="servedResultMap">
+        SELECT served_by     AS employee_id,
+               SUM(quantity) AS portions
+        FROM order_items
+        WHERE served_by IS NOT NULL
+          AND served_at IS NOT NULL
+        <if test="from != null">AND served_at &gt;= #{from}</if>
+        <if test="until != null">AND served_at &lt; #{until}</if>
+        GROUP BY served_by
+    </select>
+
+    <resultMap id="cookedResultMap" type="org.springboot.smartdining.mapper.ReportRows$Cooked">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="portions" javaType="_int"/>
+            <arg column="timed_lines" javaType="_int"/>
+            <arg column="total_seconds" javaType="_long"/>
+        </constructor>
+    </resultMap>
+
+    <select id="sumCookedByEmployee" resultMap="cookedResultMap">
+        SELECT prepared_by   AS employee_id,
+               SUM(quantity) AS portions,
+               SUM(CASE WHEN started_at IS NOT NULL THEN 1 ELSE 0 END) AS timed_lines,
+               SUM(CASE WHEN started_at IS NOT NULL THEN TIMESTAMPDIFF(SECOND, started_at, ready_at)
+                        ELSE 0 END) AS total_seconds
+        FROM order_items
+        WHERE prepared_by IS NOT NULL
+          AND ready_at IS NOT NULL
+          AND status &lt;&gt; 'CANCELLED'
+        <if test="from != null">AND ready_at &gt;= #{from}</if>
+        <if test="until != null">AND ready_at &lt; #{until}</if>
+        GROUP BY prepared_by
+    </select>
+
+    <resultMap id="cancelledResultMap" type="org.springboot.smartdining.mapper.ReportRows$Cancelled">
+        <constructor>
+            <idArg column="employee_id" javaType="long"/>
+            <arg column="line_count" javaType="_int"/>
+        </constructor>
+    </resultMap>
+
+    <select id="countCancelledByEmployee" resultMap="cancelledResultMap">
+        SELECT cancelled_by AS employee_id,
+               COUNT(*)     AS line_count
+        FROM order_items
+        WHERE cancelled_by IS NOT NULL
+          AND cancelled_at IS NOT NULL
+        <if test="from != null">AND cancelled_at &gt;= #{from}</if>
+        <if test="until != null">AND cancelled_at &lt; #{until}</if>
+        GROUP BY cancelled_by
+    </select>
 </mapper>
