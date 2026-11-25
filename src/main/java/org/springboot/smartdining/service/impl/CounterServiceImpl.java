@@ -11,12 +11,14 @@ import org.springboot.smartdining.enums.EmployeeRole;
 import org.springboot.smartdining.enums.EmployeeStatus;
 import org.springboot.smartdining.exception.BadRequestException;
 import org.springboot.smartdining.exception.ConflictException;
+import org.springboot.smartdining.exception.ForbiddenException;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.CounterShiftMapper;
 import org.springboot.smartdining.mapper.EmployeeMapper;
 import org.springboot.smartdining.security.ContactMasks;
 import org.springboot.smartdining.security.CounterCodeSender;
 import org.springboot.smartdining.security.CounterCodeStore;
+import org.springboot.smartdining.security.CurrentUser;
 import org.springboot.smartdining.service.CounterService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,8 @@ public class CounterServiceImpl implements CounterService {
     private final CounterCodeStore codeStore;
     private final CounterCodeSender codeSender;
     private final ShiftWriteLock shiftWriteLock;
+    private final OpenShiftLocker openShiftLocker;
+    private final CurrentUser currentUser;
 
     @Override
     public CounterSessionResponse getCurrentShift() {
@@ -50,6 +54,7 @@ public class CounterServiceImpl implements CounterService {
     @Override
     public CounterEmployeeResponse findCandidate(String username) {
         String name = cleanUsername(username);
+        requireSelf(name);
         requireNoOpenShift();
         Employee employee = requireCandidate(name);
         return new CounterEmployeeResponse(employee.getId(), employee.getUsername(), employee.getFullName(),
@@ -59,6 +64,7 @@ public class CounterServiceImpl implements CounterService {
     @Override
     public SendCodeResponse sendCode(String username, CodeChannel channel) {
         String name = cleanUsername(username);
+        requireSelf(name);
         require(channel, "channel");
         requireNoOpenShift();
         Employee employee = requireCandidate(name);
@@ -78,6 +84,7 @@ public class CounterServiceImpl implements CounterService {
     public CounterSessionResponse openShift(String username, String code) {
         shiftWriteLock.lockUntilTransactionEnds();
         String name = cleanUsername(username);
+        requireSelf(name);
         require(code, "code");
         requireNoOpenShift();
         Employee employee = requireCandidate(name);
@@ -105,8 +112,11 @@ public class CounterServiceImpl implements CounterService {
         // Khóa bản ghi ca trước khi lấy giờ: thao tác quầy đang chạy phải xong rồi mới chốt giờ đóng,
         // nếu không ca sẽ đóng sớm hơn việc được ghi trong chính ca đó
         CounterShift shift = counterShiftMapper.findByIdForUpdate(requireOpenShift().getId());
-        if (shift == null || shift.getEndedAt() != null
-                || counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
+        if (shift == null || shift.getEndedAt() != null) {
+            throw noOpenShift();
+        }
+        openShiftLocker.requireOwner(shift);
+        if (counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
             throw noOpenShift();
         }
     }
@@ -148,6 +158,13 @@ public class CounterServiceImpl implements CounterService {
     private void requireNoOpenShift() {
         if (counterShiftMapper.findOpen() != null) {
             throw shiftAlreadyOpen();
+        }
+    }
+
+    /** Vào ca là cho chính mình: thao tác trong ca phải do đúng người đang đăng nhập làm. */
+    private void requireSelf(String username) {
+        if (!username.equalsIgnoreCase(currentUser.require().username())) {
+            throw new ForbiddenException("FORBIDDEN", "Chỉ vào ca bằng chính tài khoản đang đăng nhập");
         }
     }
 

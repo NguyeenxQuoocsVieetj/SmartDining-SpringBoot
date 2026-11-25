@@ -13,7 +13,8 @@ public interface CounterService {
 
     /**
      * Tìm người định vào quầy theo username (CNT-2). Chỉ trả nhân viên STAFF đang ACTIVE (CNT-6),
-     * và chỉ khi chưa có ca nào mở.
+     * và chỉ khi chưa có ca nào mở. Ba bước vào ca chỉ làm được với username của người đang
+     * đăng nhập, khác thì 403.
      */
     CounterEmployeeResponse findCandidate(String username);
 
@@ -23,6 +24,6 @@ public interface CounterService {
     /** Nhập đúng mã thì bắt đầu ca (CNT-3); người trực được kiểm lại lúc mở (CNT-6). */
     CounterSessionResponse openShift(String username, String code);
 
-    /** Người trực rời quầy: đóng ca đang mở. */
+    /** Người trực rời quầy: đóng ca đang mở của mình, ca của người khác thì 403 NOT_ON_SHIFT. */
     void closeCurrentShift();
 }
