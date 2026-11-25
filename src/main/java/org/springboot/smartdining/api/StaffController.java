@@ -3,7 +3,9 @@ package org.springboot.smartdining.api;
 import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.dto.StaffItemResponse;
 import org.springboot.smartdining.dto.StaffOrderResponse;
+import org.springboot.smartdining.dto.StaffRequestResponse;
 import org.springboot.smartdining.dto.StaffTableResponse;
+import org.springboot.smartdining.dto.TableRequestResponse;
 import org.springboot.smartdining.service.StaffService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,5 +40,15 @@ public class StaffController {
     @PostMapping("/items/{itemId}/serve")
     public StaffItemResponse serve(@PathVariable Long itemId) {
         return staffService.serve(itemId);
+    }
+
+    @GetMapping("/requests")
+    public List<StaffRequestResponse> getRequests() {
+        return staffService.getPendingRequests();
+    }
+
+    @PostMapping("/requests/{id}/complete")
+    public TableRequestResponse completeRequest(@PathVariable Long id) {
+        return staffService.completeRequest(id);
     }
 }

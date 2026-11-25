@@ -2,6 +2,7 @@ package org.springboot.smartdining.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.springboot.smartdining.dto.StaffItemResponse;
+import org.springboot.smartdining.dto.StaffRequestResponse;
 
 import java.util.List;
 
@@ -13,4 +14,7 @@ public interface StaffMapper {
 
     /** Dòng món của một món tại bàn, bất kể trạng thái. */
     StaffItemResponse findItemById(Long itemId);
+
+    /** Yêu cầu đang chờ, cũ nhất trước; amountDue để trống cho service điền. */
+    List<StaffRequestResponse> findPendingRequests();
 }

@@ -48,4 +48,32 @@
         <include refid="itemSelect"/>
         WHERE oi.id = #{itemId}
     </select>
+
+    <resultMap id="requestResultMap" type="org.springboot.smartdining.dto.StaffRequestResponse">
+        <constructor>
+            <idArg column="id" javaType="long"/>
+            <arg column="table_id" javaType="long"/>
+            <arg column="table_name" javaType="string"/>
+            <arg column="request_type" javaType="org.springboot.smartdining.enums.TableRequestType"/>
+            <arg column="service_type" javaType="string"/>
+            <arg column="note" javaType="string"/>
+            <arg column="requested_at" javaType="java.time.LocalDateTime"/>
+            <arg column="amount_due" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findPendingRequests" resultMap="requestResultMap">
+        SELECT r.id            AS id,
+               r.table_id      AS table_id,
+               t.name          AS table_name,
+               r.request_type  AS request_type,
+               r.service_type  AS service_type,
+               r.note          AS note,
+               r.requested_at  AS requested_at,
+               NULL            AS amount_due
+        FROM table_requests r
+        JOIN dining_tables t ON t.id = r.table_id
+        WHERE r.status = 'PENDING'
+        ORDER BY r.requested_at, r.id
+    </select>
 </mapper>
