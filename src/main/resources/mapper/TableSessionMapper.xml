@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.TableSessionMapper">
+
+    <resultMap id="tableSessionResultMap" type="org.springboot.smartdining.entity.TableSession">
+        <id column="id" property="id"/>
+        <result column="table_id" property="tableId"/>
+        <result column="token_hash" property="tokenHash"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="expires_at" property="expiresAt"/>
+        <result column="closed_at" property="closedAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, table_id, token_hash, created_at, expires_at, closed_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO table_sessions (table_id, token_hash, created_at, expires_at, closed_at)
+        VALUES (
+            #{tableId},
+            #{tokenHash},
+            <choose><when test="createdAt != null">#{createdAt}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{expiresAt},
+            #{closedAt,jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <select id="findById" resultMap="tableSessionResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_sessions
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="tableSessionResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_sessions
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE table_sessions
+        <set>
+            table_id = #{tableId},
+            <if test="tokenHash != null">token_hash = #{tokenHash},</if>
+            expires_at = #{expiresAt},
+            closed_at = #{closedAt,jdbcType=TIMESTAMP},
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM table_sessions
+        WHERE id = #{id}
+    </delete>
+</mapper>
