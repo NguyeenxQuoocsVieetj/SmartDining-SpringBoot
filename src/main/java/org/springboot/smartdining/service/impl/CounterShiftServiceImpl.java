@@ -3,16 +3,19 @@ package org.springboot.smartdining.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.entity.CounterShift;
 import org.springboot.smartdining.exception.BadRequestException;
+import org.springboot.smartdining.exception.ConflictException;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.CounterShiftMapper;
 import org.springboot.smartdining.mapper.EmployeeMapper;
 import org.springboot.smartdining.service.CounterShiftService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.springboot.smartdining.service.impl.ServiceChecks.closingTime;
 import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 import static org.springboot.smartdining.service.impl.ServiceChecks.require;
 import static org.springboot.smartdining.service.impl.ServiceChecks.requireReference;
@@ -61,6 +64,18 @@ public class CounterShiftServiceImpl implements CounterShiftService {
     public void delete(Long id) {
         findExisting(id);
         counterShiftMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public CounterShift close(Long id) {
+        CounterShift shift = findExisting(id);
+        // Câu UPDATE chỉ đóng ca còn mở, nên hai người đóng cùng lúc thì một người nhận 409
+        if (counterShiftMapper.close(id, closingTime(shift.getStartedAt())) == 0) {
+            findExisting(id);
+            throw new ConflictException("SHIFT_ALREADY_CLOSED", "Ca quầy đã đóng");
+        }
+        return findExisting(id);
     }
 
     private CounterShift findExisting(Long id) {

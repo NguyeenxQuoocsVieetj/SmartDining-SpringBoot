@@ -48,6 +48,12 @@ public class CounterShiftController {
         return CounterShiftResponse.from(counterShiftService.update(id, request.toEntity()));
     }
 
+    /** Đóng ca hộ người đang trực (CNT-7). */
+    @PostMapping("/{id}/close")
+    public CounterShiftResponse close(@PathVariable Long id) {
+        return CounterShiftResponse.from(counterShiftService.close(id));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {

@@ -15,4 +15,7 @@ public interface CounterShiftService {
     CounterShift update(Long id, CounterShift input);
 
     void delete(Long id);
+
+    /** Admin đóng ca hộ khi nhân viên quên đăng xuất (CNT-7); ca đã đóng thì 409. */
+    CounterShift close(Long id);
 }
