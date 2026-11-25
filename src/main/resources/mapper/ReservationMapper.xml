@@ -111,4 +111,36 @@
         </where>
         ORDER BY r.arrival_time, r.id
     </select>
+
+    <select id="findRowById" resultMap="counterReservationResultMap">
+        <include refid="counterSelect"/>
+        WHERE r.id = #{id}
+    </select>
+
+    <select id="countBookedBetween" resultType="int">
+        SELECT COUNT(*)
+        FROM reservations
+        WHERE table_id = #{tableId}
+          AND status IN ('CONFIRMED', 'ARRIVED')
+          AND arrival_time &gt; #{after}
+          AND arrival_time &lt; #{before}
+          AND id &lt;&gt; #{excludedId}
+    </select>
+
+    <update id="confirm">
+        UPDATE reservations
+        SET status = 'CONFIRMED',
+            table_id = #{tableId},
+            confirmed_by = #{confirmedBy},
+            confirmed_at = #{confirmedAt}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="changeStatus">
+        UPDATE reservations
+        SET status = #{target}
+        WHERE id = #{id}
+          AND status = #{expected}
+    </update>
 </mapper>
