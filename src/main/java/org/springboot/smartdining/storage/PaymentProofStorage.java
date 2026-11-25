@@ -11,13 +11,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 
-/** Lưu ảnh bill chuyển khoản (PAY-3) ra đĩa; database chỉ giữ đường dẫn tương đối. */
+/** Lưu và đọc ảnh bill chuyển khoản (PAY-3) trên đĩa; database chỉ giữ đường dẫn tương đối. */
 @Slf4j
 @Component
 public class PaymentProofStorage {
@@ -26,10 +28,9 @@ public class PaymentProofStorage {
     private static final String FOLDER = "payment-proofs";
     private static final DateTimeFormatter MONTH_FOLDER = DateTimeFormatter.ofPattern("yyyy/MM");
 
-    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
-    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
-    private static final byte[] RIFF = {'R', 'I', 'F', 'F'};
-    private static final byte[] WEBP = {'W', 'E', 'B', 'P'};
+    /** Nội dung một ảnh đã đọc và kiểu của nó. */
+    public record StoredImage(byte[] content, String contentType) {
+    }
 
     private final Path root;
 
@@ -51,8 +52,10 @@ public class PaymentProofStorage {
             throw invalid("Ảnh bill tối đa 3MB");
         }
         byte[] content = read(proof);
+        ImageType type = ImageType.detect(content)
+                .orElseThrow(() -> invalid("Ảnh bill phải là JPEG, PNG hoặc WEBP"));
         String relativePath = FOLDER + "/" + LocalDate.now().format(MONTH_FOLDER) + "/"
-                + UUID.randomUUID() + "." + extensionOf(content);
+                + UUID.randomUUID() + "." + type.extension();
         Path target = root.resolve(relativePath);
 
         // Đăng ký xóa trước khi ghi, để file ghi dở cũng được dọn
@@ -66,31 +69,48 @@ public class PaymentProofStorage {
         return relativePath;
     }
 
+    /**
+     * Đọc ảnh theo đường dẫn lưu trong database. Đường dẫn đó có thể do API quản trị nhập tùy ý, nên
+     * chỉ đọc file ảnh thật sự nằm trong thư mục ảnh bill, kể cả sau khi đi theo liên kết tượng trưng.
+     *
+     * @return rỗng khi không có ảnh hợp lệ để trả
+     */
+    public Optional<StoredImage> load(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) {
+            return Optional.empty();
+        }
+        Path folder = root.resolve(FOLDER);
+        try {
+            Path relative = Path.of(storedPath);
+            // Có gốc nghĩa là đường dẫn tuyệt đối, ổ đĩa hoặc máy khác trong mạng: không đụng tới
+            if (relative.getRoot() != null) {
+                return Optional.empty();
+            }
+            Path target = root.resolve(relative).normalize();
+            if (!target.startsWith(folder)) {
+                return Optional.empty();
+            }
+            Path real = target.toRealPath();
+            if (!real.startsWith(folder.toRealPath()) || !Files.isRegularFile(real)
+                    || Files.size(real) > MAX_BYTES) {
+                return Optional.empty();
+            }
+            byte[] content = Files.readAllBytes(real);
+            return ImageType.detect(content).map(type -> new StoredImage(content, type.contentType()));
+        } catch (InvalidPathException | NoSuchFileException e) {
+            return Optional.empty();
+        } catch (IOException e) {
+            log.warn("Không đọc được ảnh bill: {}", storedPath, e);
+            return Optional.empty();
+        }
+    }
+
     private static byte[] read(MultipartFile proof) {
         try {
             return proof.getBytes();
         } catch (IOException e) {
             throw new UncheckedIOException("Không đọc được ảnh bill", e);
         }
-    }
-
-    /** Nhận dạng theo byte đầu file, không tin Content-Type hay tên file do client gửi. */
-    private static String extensionOf(byte[] content) {
-        if (startsWith(content, 0, JPEG)) {
-            return "jpg";
-        }
-        if (startsWith(content, 0, PNG)) {
-            return "png";
-        }
-        if (startsWith(content, 0, RIFF) && startsWith(content, 8, WEBP)) {
-            return "webp";
-        }
-        throw invalid("Ảnh bill phải là JPEG, PNG hoặc WEBP");
-    }
-
-    private static boolean startsWith(byte[] content, int offset, byte[] signature) {
-        return content.length >= offset + signature.length
-                && Arrays.equals(content, offset, offset + signature.length, signature, 0, signature.length);
     }
 
     private static BadRequestException invalid(String message) {
