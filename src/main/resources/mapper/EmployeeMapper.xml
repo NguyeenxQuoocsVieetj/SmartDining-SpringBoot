@@ -65,4 +65,10 @@
         DELETE FROM employees
         WHERE id = #{id}
     </delete>
+
+    <select id="findAdminId" resultType="long">
+        SELECT id
+        FROM employees
+        WHERE role = 'ADMIN'
+    </select>
 </mapper>

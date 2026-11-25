@@ -18,4 +18,7 @@ public interface EmployeeMapper {
     int update(Employee employee);
 
     int deleteById(Long id);
+
+    /** Id tài khoản ADMIN, null nếu chưa có. */
+    Long findAdminId();
 }
