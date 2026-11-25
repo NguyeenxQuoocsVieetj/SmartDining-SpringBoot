@@ -54,4 +54,59 @@
         DELETE FROM refunds
         WHERE id = #{id}
     </delete>
+
+    <select id="countByOrderItemId" resultType="int">
+        SELECT COUNT(*)
+        FROM refunds
+        WHERE order_item_id = #{orderItemId}
+    </select>
+
+    <select id="sumByPaymentId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM refunds
+        WHERE payment_id = #{paymentId}
+    </select>
+
+    <resultMap id="pendingRefundResultMap" type="org.springboot.smartdining.dto.PendingRefundResponse">
+        <constructor>
+            <arg column="order_id" javaType="long"/>
+            <arg column="pickup_code" javaType="int"/>
+            <arg column="pickup_date" javaType="java.time.LocalDate"/>
+            <arg column="customer_name" javaType="string"/>
+            <arg column="customer_phone" javaType="string"/>
+            <idArg column="item_id" javaType="long"/>
+            <arg column="product_name" javaType="string"/>
+            <arg column="quantity" javaType="int"/>
+            <arg column="amount" javaType="java.math.BigDecimal"/>
+            <arg column="cancel_reason" javaType="string"/>
+            <arg column="cancelled_at" javaType="java.time.LocalDateTime"/>
+            <arg column="payment_id" javaType="long"/>
+            <arg column="method" javaType="org.springboot.smartdining.enums.PaymentMethod"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findPendingTakeawayRefunds" resultMap="pendingRefundResultMap">
+        SELECT o.id                          AS order_id,
+               o.pickup_code                 AS pickup_code,
+               o.pickup_date                 AS pickup_date,
+               o.customer_name               AS customer_name,
+               o.customer_phone              AS customer_phone,
+               oi.id                         AS item_id,
+               p.name                        AS product_name,
+               oi.quantity                   AS quantity,
+               oi.quantity * oi.unit_price   AS amount,
+               oi.cancel_reason              AS cancel_reason,
+               oi.cancelled_at               AS cancelled_at,
+               pay.id                        AS payment_id,
+               pay.method                    AS method
+        FROM order_items oi
+        JOIN orders o     ON o.id = oi.order_id
+        JOIN products p   ON p.id = oi.product_id
+        JOIN payments pay ON pay.order_id = o.id AND pay.status = 'COMPLETED'
+        WHERE oi.status = 'CANCELLED'
+          AND o.order_type = 'TAKEAWAY'
+          AND oi.quantity * oi.unit_price > 0
+          AND NOT EXISTS (SELECT 1 FROM refunds r WHERE r.order_item_id = oi.id)
+        ORDER BY oi.cancelled_at, oi.id
+    </select>
 </mapper>

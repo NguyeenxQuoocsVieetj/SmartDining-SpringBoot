@@ -59,4 +59,11 @@
         DELETE FROM payments
         WHERE id = #{id}
     </delete>
+
+    <select id="findCompletedByOrderId" resultMap="paymentResultMap">
+        SELECT <include refid="columns"/>
+        FROM payments
+        WHERE order_id = #{orderId}
+          AND status = 'COMPLETED'
+    </select>
 </mapper>

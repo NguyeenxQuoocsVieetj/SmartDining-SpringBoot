@@ -17,4 +17,7 @@ public interface PaymentMapper {
     int update(Payment payment);
 
     int deleteById(Long id);
+
+    /** Khoản thu đã hoàn tất của đơn; database bảo đảm tối đa một. */
+    Payment findCompletedByOrderId(Long orderId);
 }
