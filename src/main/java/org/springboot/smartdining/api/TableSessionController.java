@@ -1,4 +1,4 @@
-package org.springboot.smartdining.controller;
+package org.springboot.smartdining.api;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
