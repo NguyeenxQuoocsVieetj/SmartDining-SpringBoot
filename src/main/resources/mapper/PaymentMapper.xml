@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.PaymentMapper">
+
+    <resultMap id="paymentResultMap" type="org.springboot.smartdining.entity.Payment">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="counter_shift_id" property="counterShiftId"/>
+        <result column="method" property="method"/>
+        <result column="amount" property="amount"/>
+        <result column="status" property="status"/>
+        <result column="proof_image_path" property="proofImagePath"/>
+        <result column="paid_at" property="paidAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, order_id, counter_shift_id, method, amount, status, proof_image_path, paid_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO payments (order_id, counter_shift_id, method, amount, status, proof_image_path, paid_at)
+        VALUES (
+            #{orderId},
+            #{counterShiftId},
+            #{method},
+            #{amount},
+            <choose><when test="status != null">#{status}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{proofImagePath,jdbcType=VARCHAR},
+            <choose><when test="paidAt != null">#{paidAt}</when><otherwise>DEFAULT</otherwise></choose>
+        )
+    </insert>
+
+    <select id="findById" resultMap="paymentResultMap">
+        SELECT <include refid="columns"/>
+        FROM payments
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="paymentResultMap">
+        SELECT <include refid="columns"/>
+        FROM payments
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE payments
+        <set>
+            order_id = #{orderId},
+            counter_shift_id = #{counterShiftId},
+            method = #{method},
+            amount = #{amount},
+            <if test="status != null">status = #{status},</if>
+            proof_image_path = #{proofImagePath,jdbcType=VARCHAR},
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM payments
+        WHERE id = #{id}
+    </delete>
+</mapper>

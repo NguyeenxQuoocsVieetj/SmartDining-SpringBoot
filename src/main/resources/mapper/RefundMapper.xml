@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.RefundMapper">
+
+    <resultMap id="refundResultMap" type="org.springboot.smartdining.entity.Refund">
+        <id column="id" property="id"/>
+        <result column="payment_id" property="paymentId"/>
+        <result column="order_item_id" property="orderItemId"/>
+        <result column="counter_shift_id" property="counterShiftId"/>
+        <result column="amount" property="amount"/>
+        <result column="reason" property="reason"/>
+        <result column="refunded_at" property="refundedAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, payment_id, order_item_id, counter_shift_id, amount, reason, refunded_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO refunds (payment_id, order_item_id, counter_shift_id, amount, reason, refunded_at)
+        VALUES (
+            #{paymentId},
+            #{orderItemId,jdbcType=BIGINT},
+            #{counterShiftId},
+            #{amount},
+            #{reason},
+            <choose><when test="refundedAt != null">#{refundedAt}</when><otherwise>DEFAULT</otherwise></choose>
+        )
+    </insert>
+
+    <select id="findById" resultMap="refundResultMap">
+        SELECT <include refid="columns"/>
+        FROM refunds
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="refundResultMap">
+        SELECT <include refid="columns"/>
+        FROM refunds
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE refunds
+        SET payment_id = #{paymentId},
+            order_item_id = #{orderItemId,jdbcType=BIGINT},
+            counter_shift_id = #{counterShiftId},
+            amount = #{amount},
+            reason = #{reason}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM refunds
+        WHERE id = #{id}
+    </delete>
+</mapper>

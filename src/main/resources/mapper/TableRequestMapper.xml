@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.springboot.smartdining.mapper.TableRequestMapper">
+
+    <resultMap id="tableRequestResultMap" type="org.springboot.smartdining.entity.TableRequest">
+        <id column="id" property="id"/>
+        <result column="table_id" property="tableId"/>
+        <result column="request_type" property="requestType"/>
+        <result column="service_type" property="serviceType"/>
+        <result column="note" property="note"/>
+        <result column="status" property="status"/>
+        <result column="requested_at" property="requestedAt"/>
+        <result column="completed_at" property="completedAt"/>
+        <result column="completed_by" property="completedBy"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, table_id, request_type, service_type, note, status, requested_at, completed_at, completed_by
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO table_requests (table_id, request_type, service_type, note, status,
+                                    requested_at, completed_at, completed_by)
+        VALUES (
+            #{tableId},
+            #{requestType},
+            #{serviceType,jdbcType=VARCHAR},
+            #{note,jdbcType=VARCHAR},
+            <choose><when test="status != null">#{status}</when><otherwise>DEFAULT</otherwise></choose>,
+            <choose><when test="requestedAt != null">#{requestedAt}</when><otherwise>DEFAULT</otherwise></choose>,
+            #{completedAt,jdbcType=TIMESTAMP},
+            #{completedBy,jdbcType=BIGINT}
+        )
+    </insert>
+
+    <select id="findById" resultMap="tableRequestResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_requests
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="tableRequestResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_requests
+        ORDER BY id
+    </select>
+
+    <update id="update">
+        UPDATE table_requests
+        <set>
+            table_id = #{tableId},
+            request_type = #{requestType},
+            service_type = #{serviceType,jdbcType=VARCHAR},
+            note = #{note,jdbcType=VARCHAR},
+            <if test="status != null">status = #{status},</if>
+            completed_at = #{completedAt,jdbcType=TIMESTAMP},
+            completed_by = #{completedBy,jdbcType=BIGINT},
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM table_requests
+        WHERE id = #{id}
+    </delete>
+</mapper>
