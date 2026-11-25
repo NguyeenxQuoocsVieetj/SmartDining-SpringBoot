@@ -6,6 +6,7 @@ import org.springboot.smartdining.entity.CounterShift;
 import org.springboot.smartdining.entity.Employee;
 import org.springboot.smartdining.entity.RefreshToken;
 import org.springboot.smartdining.enums.EmployeeStatus;
+import org.springboot.smartdining.exception.BadRequestException;
 import org.springboot.smartdining.exception.ForbiddenException;
 import org.springboot.smartdining.exception.UnauthorizedException;
 import org.springboot.smartdining.mapper.CounterShiftMapper;
@@ -17,6 +18,7 @@ import org.springboot.smartdining.security.TableTokens;
 import org.springboot.smartdining.security.TokenService;
 import org.springboot.smartdining.service.AuthService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordChecker passwordChecker;
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final TokenService tokenService;
+    private final BCryptPasswordEncoder passwordEncoder;
     private final Duration sessionTimeToLive;
 
     public AuthServiceImpl(EmployeeMapper employeeMapper,
@@ -55,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
                            PasswordChecker passwordChecker,
                            LoginAttemptLimiter loginAttemptLimiter,
                            TokenService tokenService,
+                           BCryptPasswordEncoder passwordEncoder,
                            @Value("${smartdining.security.session-ttl:8h}") Duration sessionTimeToLive) {
         if (sessionTimeToLive.toSeconds() < 1) {
             throw new IllegalStateException("smartdining.security.session-ttl phải ít nhất 1 giây");
@@ -65,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
         this.passwordChecker = passwordChecker;
         this.loginAttemptLimiter = loginAttemptLimiter;
         this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
         this.sessionTimeToLive = sessionTimeToLive;
     }
 
@@ -138,6 +143,31 @@ public class AuthServiceImpl implements AuthService {
         return new MeResponse(employee.getId(), employee.getUsername(), employee.getFullName(),
                 employee.getEmail(), employee.getPhone(), employee.getAvatarUrl(), employee.getRole(),
                 employee.getStatus(), onShift);
+    }
+
+    @Override
+    public void changePassword(EmployeePrincipal principal, String currentPassword, String newPassword,
+                               String clientAddress) {
+        require(currentPassword, "currentPassword");
+        PasswordPolicy.require(newPassword);
+        LoginAttemptLimiter.Attempt attempt = loginAttemptLimiter.acquire(
+                principal.username().toLowerCase(Locale.ROOT), clientAddress);
+        String currentHash = employeeMapper.findById(principal.id()).getPasswordHash();
+        if (!passwordChecker.matches(currentPassword, currentHash)) {
+            throw wrongCurrentPassword();
+        }
+        loginAttemptLimiter.succeed(attempt);
+
+        Employee employee = employeeMapper.findByIdForUpdate(principal.id());
+        if (employee == null || !Objects.equals(employee.getPasswordHash(), currentHash)) {
+            throw wrongCurrentPassword();
+        }
+        employeeMapper.updatePassword(employee.getId(), passwordEncoder.encode(newPassword));
+        refreshTokenMapper.revokeByEmployee(employee.getId(), now());
+    }
+
+    private static BadRequestException wrongCurrentPassword() {
+        return new BadRequestException("INVALID_PASSWORD", "Mật khẩu hiện tại không đúng");
     }
 
     private TokenResponse issuePair(Employee employee, String sessionId, LocalDateTime createdAt,

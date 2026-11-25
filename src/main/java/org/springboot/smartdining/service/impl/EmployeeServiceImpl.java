@@ -3,19 +3,22 @@ package org.springboot.smartdining.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.entity.Employee;
 import org.springboot.smartdining.enums.EmployeeRole;
+import org.springboot.smartdining.enums.EmployeeStatus;
 import org.springboot.smartdining.exception.BadRequestException;
 import org.springboot.smartdining.exception.ConflictException;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.EmployeeMapper;
+import org.springboot.smartdining.mapper.RefreshTokenMapper;
 import org.springboot.smartdining.service.EmployeeService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 import static org.springboot.smartdining.service.impl.ServiceChecks.optionalText;
 import static org.springboot.smartdining.service.impl.ServiceChecks.orNow;
 import static org.springboot.smartdining.service.impl.ServiceChecks.require;
@@ -27,12 +30,10 @@ import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 public class EmployeeServiceImpl implements EmployeeService {
 
     private static final Pattern USERNAME = Pattern.compile("[A-Za-z0-9._-]{3,50}");
-    private static final int MIN_PASSWORD_LENGTH = 8;
-    /** BCrypt chỉ nhận tối đa 72 byte. */
-    private static final int MAX_PASSWORD_BYTES = 72;
 
     private final EmployeeMapper employeeMapper;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final RefreshTokenMapper refreshTokenMapper;
 
     @Override
     public Employee create(Employee input, String rawPassword) {
@@ -56,13 +57,24 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Employee update(Long id, Employee input, String rawPassword) {
-        requireNotAdmin(findExisting(id));
+        // Khóa nhân viên như các thao tác phiên đăng nhập, để không sót token cấp xen vào
+        Employee existing = employeeMapper.findByIdForUpdate(id);
+        if (existing == null) {
+            throw notFound(id);
+        }
+        requireNotAdmin(existing);
         Employee employee = fromInput(input);
         employee.setId(id);
         // passwordHash null: mapper không đụng tới cột password_hash
         employee.setPasswordHash(rawPassword == null ? null : hash(rawPassword));
         employeeMapper.update(employee);
+        // Đổi mật khẩu hoặc cho nghỉ thì đăng xuất mọi thiết bị của người đó
+        boolean disabled = input.getStatus() != null && input.getStatus() != EmployeeStatus.ACTIVE;
+        if (rawPassword != null || disabled) {
+            refreshTokenMapper.revokeByEmployee(id, now());
+        }
         return findExisting(id);
     }
 
@@ -75,9 +87,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     private Employee findExisting(Long id) {
         Employee employee = employeeMapper.findById(id);
         if (employee == null) {
-            throw new ResourceNotFoundException("Không tìm thấy nhân viên " + id);
+            throw notFound(id);
         }
         return employee;
+    }
+
+    private static ResourceNotFoundException notFound(Long id) {
+        return new ResourceNotFoundException("Không tìm thấy nhân viên " + id);
     }
 
     private void requireNotAdmin(Employee employee) {
@@ -107,12 +123,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private String hash(String rawPassword) {
-        if (rawPassword.isBlank() || rawPassword.length() < MIN_PASSWORD_LENGTH) {
-            throw new BadRequestException("Mật khẩu phải có ít nhất " + MIN_PASSWORD_LENGTH + " ký tự");
-        }
-        if (rawPassword.getBytes(StandardCharsets.UTF_8).length > MAX_PASSWORD_BYTES) {
-            throw new BadRequestException("Mật khẩu dài quá " + MAX_PASSWORD_BYTES + " byte");
-        }
-        return passwordEncoder.encode(rawPassword);
+        return passwordEncoder.encode(PasswordPolicy.require(rawPassword));
     }
 }

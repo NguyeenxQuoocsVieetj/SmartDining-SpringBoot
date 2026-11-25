@@ -7,6 +7,7 @@ import org.springboot.smartdining.dto.EmployeeRequest;
 import org.springboot.smartdining.dto.EmployeeResponse;
 import org.springboot.smartdining.dto.OnCreate;
 import org.springboot.smartdining.entity.Employee;
+import org.springboot.smartdining.service.AccountService;
 import org.springboot.smartdining.service.EmployeeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final AccountService accountService;
 
     @PostMapping
     public ResponseEntity<EmployeeResponse> create(
@@ -50,6 +52,12 @@ public class EmployeeController {
     @PutMapping("/{id}")
     public EmployeeResponse update(@PathVariable Long id, @Valid @RequestBody EmployeeRequest request) {
         return EmployeeResponse.from(employeeService.update(id, request.toEntity(), request.password()));
+    }
+
+    /** Duyệt tài khoản tự đăng ký (ACC-1). */
+    @PostMapping("/{id}/approve")
+    public EmployeeResponse approve(@PathVariable Long id) {
+        return EmployeeResponse.from(accountService.approve(id));
     }
 
     @DeleteMapping("/{id}")

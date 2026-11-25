@@ -104,7 +104,8 @@ public class SecurityConfig {
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/me").authenticated()
+                        .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/me", "/api/v1/auth/password")
+                        .authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(server -> server
                         .bearerTokenResolver(bearerTokenResolver())

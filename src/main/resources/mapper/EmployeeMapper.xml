@@ -85,6 +85,12 @@
         FOR UPDATE
     </select>
 
+    <update id="updatePassword">
+        UPDATE employees
+        SET password_hash = #{passwordHash}
+        WHERE id = #{id}
+    </update>
+
     <select id="findActiveSession" resultMap="employeeResultMap">
         SELECT <include refid="columns"/>
         FROM employees

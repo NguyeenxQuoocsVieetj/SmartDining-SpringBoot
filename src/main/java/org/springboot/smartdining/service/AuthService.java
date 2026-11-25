@@ -23,4 +23,8 @@ public interface AuthService {
     void logout(EmployeePrincipal principal);
 
     MeResponse me(EmployeePrincipal principal);
+
+    /** Đổi mật khẩu của chính mình rồi thu hồi mọi phiên; sai mật khẩu hiện tại cũng bị tính khi chặn dò. */
+    void changePassword(EmployeePrincipal principal, String currentPassword, String newPassword,
+                        String clientAddress);
 }

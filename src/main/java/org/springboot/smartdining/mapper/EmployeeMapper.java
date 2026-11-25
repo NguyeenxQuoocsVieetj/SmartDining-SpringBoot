@@ -34,4 +34,6 @@ public interface EmployeeMapper {
     Employee findActiveSession(@Param("employeeId") Long employeeId,
                                @Param("sessionId") String sessionId,
                                @Param("now") LocalDateTime now);
+
+    int updatePassword(@Param("id") Long id, @Param("passwordHash") String passwordHash);
 }
