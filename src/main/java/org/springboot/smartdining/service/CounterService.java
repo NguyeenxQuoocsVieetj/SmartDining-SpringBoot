@@ -19,4 +19,10 @@ public interface CounterService {
 
     /** Phát mã 6 số và gửi qua kênh đã chọn (CNT-3, CNT-4). */
     SendCodeResponse sendCode(String username, CodeChannel channel);
+
+    /** Nhập đúng mã thì bắt đầu ca (CNT-3); người trực được kiểm lại lúc mở (CNT-6). */
+    CounterSessionResponse openShift(String username, String code);
+
+    /** Người trực rời quầy: đóng ca đang mở. */
+    void closeCurrentShift();
 }

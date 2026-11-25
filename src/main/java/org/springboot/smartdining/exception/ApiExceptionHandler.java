@@ -34,7 +34,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ProblemDetail> handleBadRequest(BadRequestException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

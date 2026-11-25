@@ -51,4 +51,11 @@
         FROM counter_shifts
         WHERE ended_at IS NULL
     </select>
+
+    <update id="close">
+        UPDATE counter_shifts
+        SET ended_at = #{endedAt}
+        WHERE id = #{id}
+          AND ended_at IS NULL
+    </update>
 </mapper>

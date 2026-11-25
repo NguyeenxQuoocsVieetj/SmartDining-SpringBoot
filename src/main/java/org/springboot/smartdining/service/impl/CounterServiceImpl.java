@@ -9,6 +9,7 @@ import org.springboot.smartdining.entity.Employee;
 import org.springboot.smartdining.enums.CodeChannel;
 import org.springboot.smartdining.enums.EmployeeRole;
 import org.springboot.smartdining.enums.EmployeeStatus;
+import org.springboot.smartdining.exception.BadRequestException;
 import org.springboot.smartdining.exception.ConflictException;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.CounterShiftMapper;
@@ -17,9 +18,15 @@ import org.springboot.smartdining.security.ContactMasks;
 import org.springboot.smartdining.security.CounterCodeSender;
 import org.springboot.smartdining.security.CounterCodeStore;
 import org.springboot.smartdining.service.CounterService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import static org.springboot.smartdining.service.impl.ServiceChecks.closingTime;
+import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 import static org.springboot.smartdining.service.impl.ServiceChecks.require;
 import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 
@@ -65,12 +72,71 @@ public class CounterServiceImpl implements CounterService {
                 codeStore.resendDelay().toSeconds());
     }
 
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public CounterSessionResponse openShift(String username, String code) {
+        String name = cleanUsername(username);
+        require(code, "code");
+        requireNoOpenShift();
+        Employee employee = requireCandidate(name);
+        switch (codeStore.verify(employee.getId(), code)) {
+            case WRONG -> throw new BadRequestException("INVALID_CODE", "Mã không đúng");
+            case UNAVAILABLE -> throw new ConflictException("CODE_EXPIRED",
+                    "Mã chưa được gửi, đã hết hạn hoặc đã bị hủy; hãy gửi mã mới");
+            case ACCEPTED -> {
+                // mã đúng, mở ca
+            }
+        }
+
+        CounterShift shift = new CounterShift();
+        shift.setEmployeeId(employee.getId());
+        shift.setStartedAt(now());
+        insertOpenShift(shift);
+        clearCodesAfterCommit();
+        return CounterSessionResponse.from(shift, employee);
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void closeCurrentShift() {
+        CounterShift shift = requireOpenShift();
+        if (counterShiftMapper.close(shift.getId(), closingTime(shift.getStartedAt())) == 0) {
+            throw noOpenShift();
+        }
+    }
+
+    /** Người khác vừa mở ca trước thì ràng buộc "một ca mở" chặn lại. */
+    private void insertOpenShift(CounterShift shift) {
+        try {
+            counterShiftMapper.insert(shift);
+        } catch (DataIntegrityViolationException e) {
+            if (counterShiftMapper.findOpen() != null) {
+                throw shiftAlreadyOpen();
+            }
+            throw e;
+        }
+    }
+
+    /** Chỉ bỏ mã khi ca đã thật sự được lưu. */
+    private void clearCodesAfterCommit() {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                codeStore.clear();
+            }
+        });
+    }
+
     private CounterShift requireOpenShift() {
         CounterShift shift = counterShiftMapper.findOpen();
         if (shift == null) {
-            throw new ResourceNotFoundException("NO_OPEN_SHIFT", "Chưa có ca quầy nào đang mở");
+            throw noOpenShift();
         }
         return shift;
+    }
+
+    private static ResourceNotFoundException noOpenShift() {
+        return new ResourceNotFoundException("NO_OPEN_SHIFT", "Chưa có ca quầy nào đang mở");
     }
 
     private void requireNoOpenShift() {

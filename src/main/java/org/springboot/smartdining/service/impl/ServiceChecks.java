@@ -74,6 +74,12 @@ final class ServiceChecks {
         return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
+    /** Giờ đóng ca: giờ hiện tại, nhưng không sớm hơn giờ bắt đầu (database bắt buộc). */
+    static LocalDateTime closingTime(LocalDateTime startedAt) {
+        LocalDateTime current = now();
+        return current.isBefore(startedAt) ? startedAt : current;
+    }
+
     /**
      * Mốc tạo bản ghi: dùng giá trị được đưa vào, không có thì lấy giờ ứng dụng.
      * Không để database tự điền CURRENT_TIMESTAMP vì múi giờ của nó có thể khác (ví dụ UTC).
