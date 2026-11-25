@@ -36,4 +36,6 @@ public interface DiningTableMapper {
     }
 
     int deleteById(Long id);
+
+    DiningTable findByQrToken(String qrToken);
 }

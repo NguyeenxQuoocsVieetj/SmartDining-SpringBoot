@@ -44,7 +44,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ProblemDetail> handleConflict(ConflictException ex) {
-        return problem(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(TableSessionInvalidException.class)
+    public ResponseEntity<ProblemDetail> handleTableSession(TableSessionInvalidException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "TABLE_SESSION_INVALID", ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

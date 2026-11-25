@@ -53,4 +53,10 @@
         DELETE FROM table_sessions
         WHERE id = #{id}
     </delete>
+
+    <select id="findByTokenHash" resultMap="tableSessionResultMap">
+        SELECT <include refid="columns"/>
+        FROM table_sessions
+        WHERE token_hash = #{tokenHash}
+    </select>
 </mapper>

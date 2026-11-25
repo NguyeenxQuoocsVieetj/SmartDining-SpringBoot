@@ -18,4 +18,6 @@ public interface TableSessionMapper {
     int update(TableSession tableSession);
 
     int deleteById(Long id);
+
+    TableSession findByTokenHash(String tokenHash);
 }

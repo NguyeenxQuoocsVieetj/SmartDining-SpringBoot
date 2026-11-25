@@ -52,4 +52,10 @@
         DELETE FROM dining_tables
         WHERE id = #{id}
     </delete>
+
+    <select id="findByQrToken" resultMap="diningTableResultMap">
+        SELECT <include refid="columns"/>
+        FROM dining_tables
+        WHERE qr_token = #{qrToken}
+    </select>
 </mapper>

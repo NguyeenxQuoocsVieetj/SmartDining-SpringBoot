@@ -5,14 +5,10 @@ import org.springboot.smartdining.entity.TableSession;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.DiningTableMapper;
 import org.springboot.smartdining.mapper.TableSessionMapper;
+import org.springboot.smartdining.security.TableTokens;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.List;
 
 import static org.springboot.smartdining.service.ServiceChecks.require;
@@ -23,14 +19,13 @@ import static org.springboot.smartdining.service.ServiceChecks.requireReference;
 @Transactional
 public class TableSessionService {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     private final TableSessionMapper tableSessionMapper;
     private final DiningTableMapper diningTableMapper;
 
+    /** Phiên tạo từ quản trị không trả token gốc cho ai, khách lấy phiên qua mã QR. */
     public TableSession create(TableSession input) {
         TableSession session = fromInput(input);
-        session.setTokenHash(newTokenHash());
+        session.setTokenHash(TableTokens.hash(TableTokens.newToken()));
         session.setCreatedAt(input.getCreatedAt());
         tableSessionMapper.insert(session);
         return findExisting(session.getId());
@@ -77,19 +72,4 @@ public class TableSessionService {
         return session;
     }
 
-    /**
-     * SHA-256 của một chuỗi ngẫu nhiên. Chuỗi gốc chưa được trả cho ai;
-     * luồng khách quét QR sẽ cần trả nó về khi làm tới.
-     */
-    private static String newTokenHash() {
-        byte[] token = new byte[32];
-        RANDOM.nextBytes(token);
-        String rawToken = HexFormat.of().formatHex(token);
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Máy ảo Java không hỗ trợ SHA-256", e);
-        }
-    }
 }
