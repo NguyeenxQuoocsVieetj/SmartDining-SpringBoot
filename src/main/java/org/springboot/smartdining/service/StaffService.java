@@ -1,196 +1,33 @@
 package org.springboot.smartdining.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.dto.StaffItemResponse;
 import org.springboot.smartdining.dto.StaffOrderResponse;
 import org.springboot.smartdining.dto.StaffRequestResponse;
 import org.springboot.smartdining.dto.StaffTableResponse;
 import org.springboot.smartdining.dto.TableRequestResponse;
-import org.springboot.smartdining.entity.DiningTable;
-import org.springboot.smartdining.entity.Order;
-import org.springboot.smartdining.entity.OrderItem;
-import org.springboot.smartdining.entity.Product;
-import org.springboot.smartdining.entity.TableRequest;
-import org.springboot.smartdining.enums.OrderItemStatus;
-import org.springboot.smartdining.enums.OrderType;
-import org.springboot.smartdining.enums.TableRequestStatus;
-import org.springboot.smartdining.enums.TableRequestType;
-import org.springboot.smartdining.enums.TableStatus;
-import org.springboot.smartdining.exception.ConflictException;
-import org.springboot.smartdining.exception.ResourceNotFoundException;
-import org.springboot.smartdining.mapper.DiningTableMapper;
-import org.springboot.smartdining.mapper.OrderItemMapper;
-import org.springboot.smartdining.mapper.OrderMapper;
-import org.springboot.smartdining.mapper.ProductMapper;
-import org.springboot.smartdining.mapper.StaffMapper;
-import org.springboot.smartdining.mapper.TableRequestMapper;
-import org.springboot.smartdining.security.CurrentUser;
-import org.springboot.smartdining.service.impl.OrderAmounts;
-import org.springboot.smartdining.service.impl.OrderItemLocker;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static org.springboot.smartdining.service.impl.ServiceChecks.now;
 
 /** Màn hình của nhân viên phục vụ. */
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class StaffService {
-
-    private final DiningTableMapper diningTableMapper;
-    private final OrderMapper orderMapper;
-    private final OrderItemMapper orderItemMapper;
-    private final ProductMapper productMapper;
-    private final StaffMapper staffMapper;
-    private final TableRequestMapper tableRequestMapper;
-    private final OrderItemLocker orderItemLocker;
-    private final CurrentUser currentUser;
+public interface StaffService {
 
     /** Sơ đồ bàn (STF-1), ẩn bàn INACTIVE. Đọc bàn, đơn, món mỗi thứ một lần. */
-    public List<StaffTableResponse> getTables() {
-        Map<Long, Order> orderByTable = openOrdersByTable();
-        Map<Long, List<OrderItem>> itemsByOrder = openItemsByOrder();
-        return diningTableMapper.findAll().stream()
-                .filter(table -> table.getStatus() != TableStatus.INACTIVE)
-                .map(table -> {
-                    Order order = orderByTable.get(table.getId());
-                    List<OrderItem> items = order == null
-                            ? List.of() : itemsByOrder.getOrDefault(order.getId(), List.of());
-                    return new StaffTableResponse(table.getId(), table.getName(), table.getStatus(),
-                            order == null ? null : order.getId(), OrderAmounts.sentTotal(items),
-                            countPortions(items, StaffService::isSent),
-                            countPortions(items, status -> isSent(status) && status != OrderItemStatus.SERVED),
-                            countPortions(items, status -> status == OrderItemStatus.READY));
-                })
-                .toList();
-    }
+    List<StaffTableResponse> getTables();
 
-    public StaffOrderResponse getOrder(Long tableId) {
-        DiningTable table = diningTableMapper.findById(tableId);
-        if (table == null) {
-            throw new ResourceNotFoundException("Không tìm thấy bàn " + tableId);
-        }
-        Order order = orderMapper.findUnpaidByTableId(tableId);
-        if (order == null) {
-            throw new ResourceNotFoundException("NO_OPEN_ORDER", "Bàn không có đơn đang mở");
-        }
-        List<OrderItem> items = orderItemMapper.findByOrderId(order.getId());
-        Map<Long, String> productNames = productMapper.findByOrderId(order.getId()).stream()
-                .collect(Collectors.toMap(Product::getId, Product::getName));
-        List<StaffOrderResponse.Item> lines = items.stream()
-                .map(item -> new StaffOrderResponse.Item(item.getId(), productNames.get(item.getProductId()),
-                        item.getQuantity(), item.getUnitPrice(), OrderAmounts.amountOf(item), item.getNote(),
-                        item.getStatus(), item.getCancelReason(), item.getCreatedAt()))
-                .toList();
-        return new StaffOrderResponse(table.getId(), table.getName(), table.getStatus(), order.getId(),
-                order.getCreatedAt(), OrderAmounts.sentTotal(items), lines);
-    }
+    StaffOrderResponse getOrder(Long tableId);
 
     /** Món đã xong chờ mang ra tại bàn. Đơn mang về giao ở quầy nên không nằm đây. */
-    public List<StaffItemResponse> getReadyItems() {
-        return staffMapper.findReadyItems();
-    }
+    List<StaffItemResponse> getReadyItems();
 
     /** Mang món ra bàn (STF-2): chỉ món READY. */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public StaffItemResponse serve(Long itemId) {
-        OrderItemLocker.LockedItem locked = orderItemLocker.lock(itemId);
-        if (locked.order().getOrderType() != OrderType.DINE_IN) {
-            throw new ConflictException("INVALID_ORDER_TYPE", "Đơn mang về giao ở quầy, không mang ra bàn");
-        }
-        OrderItem item = locked.item();
-        if (item.getStatus() != OrderItemStatus.READY) {
-            throw OrderItemLocker.invalidTransition(item.getStatus(), OrderItemStatus.SERVED);
-        }
-        item.setStatus(OrderItemStatus.SERVED);
-        item.setServedBy(currentUser.getId());
-        item.setServedAt(now());
-        if (orderItemMapper.update(item) == 0) {
-            throw new ConflictException("Món vừa được người khác sửa, hãy thử lại");
-        }
-        return staffMapper.findItemById(itemId);
-    }
+    StaffItemResponse serve(Long itemId);
 
     /** Yêu cầu đang chờ; yêu cầu thanh toán kèm số tiền lấy từ đơn đang mở của bàn (REQ-4). */
-    public List<StaffRequestResponse> getPendingRequests() {
-        Map<Long, Order> orderByTable = openOrdersByTable();
-        Map<Long, List<OrderItem>> itemsByOrder = openItemsByOrder();
-        return staffMapper.findPendingRequests().stream()
-                .map(request -> {
-                    if (request.requestType() != TableRequestType.PAYMENT) {
-                        return request;
-                    }
-                    Order order = orderByTable.get(request.tableId());
-                    List<OrderItem> items = order == null
-                            ? List.of() : itemsByOrder.getOrDefault(order.getId(), List.of());
-                    return request.withAmountDue(OrderAmounts.sentTotal(items));
-                })
-                .toList();
-    }
+    List<StaffRequestResponse> getPendingRequests();
 
     /**
      * Đánh dấu đã xử lý một yêu cầu gọi phục vụ và ghi người, giờ xử lý (REQ-1, REQ-2).
      * Yêu cầu thanh toán chỉ đóng được khi thanh toán (STF-3).
      */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public TableRequestResponse completeRequest(Long requestId) {
-        Long tableId = findRequest(requestId).getTableId();
-        diningTableMapper.findByIdForUpdate(tableId);
-        // Đọc lại sau khi có khóa: người khác có thể vừa xử lý xong
-        TableRequest request = findRequest(requestId);
-        if (!request.getTableId().equals(tableId)) {
-            throw new ConflictException("Yêu cầu vừa được chuyển sang bàn khác, hãy thử lại");
-        }
-        if (request.getStatus() == TableRequestStatus.COMPLETED) {
-            throw new ConflictException("REQUEST_ALREADY_COMPLETED", "Yêu cầu đã được xử lý");
-        }
-        if (request.getRequestType() == TableRequestType.PAYMENT) {
-            throw new ConflictException("PAYMENT_REQUIRES_CHECKOUT",
-                    "Yêu cầu thanh toán chỉ đóng được khi quầy thu tiền");
-        }
-        request.setStatus(TableRequestStatus.COMPLETED);
-        request.setCompletedBy(currentUser.getId());
-        request.setCompletedAt(now());
-        if (tableRequestMapper.update(request) == 0) {
-            throw new ConflictException("Yêu cầu vừa được người khác thay đổi, hãy thử lại");
-        }
-        return TableRequestResponse.from(findRequest(requestId));
-    }
-
-    private TableRequest findRequest(Long requestId) {
-        TableRequest request = tableRequestMapper.findById(requestId);
-        if (request == null) {
-            throw new ResourceNotFoundException("Không tìm thấy yêu cầu " + requestId);
-        }
-        return request;
-    }
-
-    private Map<Long, Order> openOrdersByTable() {
-        return orderMapper.findUnpaidDineIn().stream()
-                .collect(Collectors.toMap(Order::getTableId, Function.identity()));
-    }
-
-    private Map<Long, List<OrderItem>> openItemsByOrder() {
-        return orderItemMapper.findOfUnpaidDineInOrders().stream()
-                .collect(Collectors.groupingBy(OrderItem::getOrderId));
-    }
-
-    private static boolean isSent(OrderItemStatus status) {
-        return status != OrderItemStatus.CART && status != OrderItemStatus.CANCELLED;
-    }
-
-    private static int countPortions(List<OrderItem> items, Predicate<OrderItemStatus> counted) {
-        return items.stream()
-                .filter(item -> counted.test(item.getStatus()))
-                .mapToInt(OrderItem::getQuantity)
-                .sum();
-    }
+    TableRequestResponse completeRequest(Long requestId);
 }
