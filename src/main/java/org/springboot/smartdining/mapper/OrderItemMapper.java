@@ -36,4 +36,6 @@ public interface OrderItemMapper {
     }
 
     int deleteById(Long id);
+
+    int countByProductId(Long productId);
 }

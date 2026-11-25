@@ -90,4 +90,10 @@
         DELETE FROM order_items
         WHERE id = #{id}
     </delete>
+
+    <select id="countByProductId" resultType="int">
+        SELECT COUNT(*)
+        FROM order_items
+        WHERE product_id = #{productId}
+    </select>
 </mapper>

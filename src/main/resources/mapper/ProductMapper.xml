@@ -57,4 +57,10 @@
         DELETE FROM products
         WHERE id = #{id}
     </delete>
+
+    <select id="countByCategoryId" resultType="int">
+        SELECT COUNT(*)
+        FROM products
+        WHERE category_id = #{categoryId}
+    </select>
 </mapper>
