@@ -55,10 +55,21 @@ public class CounterShiftServiceImpl implements CounterShiftService {
     @Override
     public CounterShift update(Long id, CounterShift input) {
         shiftWriteLock.lockUntilTransactionEnds();
-        CounterShift existing = findExisting(id);
+        // Khóa bản ghi để giữ đúng giờ đóng đang có khi ghi lại
+        CounterShift existing = counterShiftMapper.findByIdForUpdate(id);
+        if (existing == null) {
+            throw notFound(id);
+        }
         require(input, "dữ liệu ca quầy");
-        CounterShift shift = fromInput(input, existing.getStartedAt());
+        // Chỉ thao tác đóng ca mới đặt giờ đóng, nên không sửa hay mở lại được qua đây
+        if (input.getEndedAt() != null && !input.getEndedAt().equals(existing.getEndedAt())) {
+            throw new ConflictException("SHIFT_END_NOT_EDITABLE",
+                    "Không sửa được giờ đóng ca; dùng thao tác đóng ca");
+        }
+        CounterShift shift = new CounterShift();
         shift.setId(id);
+        shift.setEmployeeId(requireEmployee(input));
+        shift.setEndedAt(existing.getEndedAt());
         counterShiftMapper.update(shift);
         return findExisting(id);
     }
@@ -98,9 +109,13 @@ public class CounterShiftServiceImpl implements CounterShiftService {
         return new ResourceNotFoundException("Không tìm thấy ca quầy " + id);
     }
 
+    private Long requireEmployee(CounterShift input) {
+        return requireReference(input.getEmployeeId(), employeeMapper::findById, "employeeId");
+    }
+
     private CounterShift fromInput(CounterShift input, LocalDateTime startedAt) {
         CounterShift shift = new CounterShift();
-        shift.setEmployeeId(requireReference(input.getEmployeeId(), employeeMapper::findById, "employeeId"));
+        shift.setEmployeeId(requireEmployee(input));
         if (input.getEndedAt() != null && input.getEndedAt().isBefore(startedAt)) {
             throw new BadRequestException("endedAt không được trước startedAt");
         }
