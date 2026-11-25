@@ -13,4 +13,7 @@ public interface KitchenMapper {
      * món cũ nhất trước.
      */
     List<KitchenTaskResponse> findTasks();
+
+    /** Dòng bếp của một món, bất kể trạng thái. */
+    KitchenTaskResponse findTaskByItemId(Long itemId);
 }

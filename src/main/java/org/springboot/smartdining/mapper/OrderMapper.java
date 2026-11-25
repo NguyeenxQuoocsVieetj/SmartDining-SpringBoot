@@ -41,4 +41,7 @@ public interface OrderMapper {
 
     /** Đơn đang mở của bàn, null nếu không có. Database bảo đảm mỗi bàn tối đa một đơn. */
     Order findUnpaidByTableId(Long tableId);
+
+    /** Đọc và khóa đơn tới hết transaction, dùng cho đơn không có bàn. */
+    Order findByIdForUpdate(Long id);
 }

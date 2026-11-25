@@ -50,4 +50,9 @@
                OR (o.order_type = 'TAKEAWAY' AND o.status &lt;&gt; 'CANCELLED'))
         ORDER BY oi.created_at, oi.id
     </select>
+
+    <select id="findTaskByItemId" resultMap="taskResultMap">
+        <include refid="taskSelect"/>
+        WHERE oi.id = #{itemId}
+    </select>
 </mapper>

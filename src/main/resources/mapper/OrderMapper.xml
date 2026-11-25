@@ -94,4 +94,11 @@
         WHERE table_id = #{tableId}
           AND status = 'UNPAID'
     </select>
+
+    <select id="findByIdForUpdate" resultMap="orderResultMap" flushCache="true" useCache="false">
+        SELECT <include refid="columns"/>
+        FROM orders
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
 </mapper>
