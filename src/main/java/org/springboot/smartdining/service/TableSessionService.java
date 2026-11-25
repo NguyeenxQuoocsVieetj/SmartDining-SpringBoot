@@ -1,76 +1,19 @@
 package org.springboot.smartdining.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.entity.TableSession;
-import org.springboot.smartdining.exception.ResourceNotFoundException;
-import org.springboot.smartdining.mapper.DiningTableMapper;
-import org.springboot.smartdining.mapper.TableSessionMapper;
-import org.springboot.smartdining.security.TableTokens;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.springboot.smartdining.service.impl.ServiceChecks.orNow;
-import static org.springboot.smartdining.service.impl.ServiceChecks.require;
-import static org.springboot.smartdining.service.impl.ServiceChecks.requireReference;
-
-@Service
-@RequiredArgsConstructor
-@Transactional
-public class TableSessionService {
-
-    private final TableSessionMapper tableSessionMapper;
-    private final DiningTableMapper diningTableMapper;
+public interface TableSessionService {
 
     /** Phiên tạo từ quản trị không trả token gốc cho ai, khách lấy phiên qua mã QR. */
-    public TableSession create(TableSession input) {
-        TableSession session = fromInput(input);
-        session.setTokenHash(TableTokens.hash(TableTokens.newToken()));
-        session.setCreatedAt(orNow(input.getCreatedAt()));
-        tableSessionMapper.insert(session);
-        return findExisting(session.getId());
-    }
+    TableSession create(TableSession input);
 
-    @Transactional(readOnly = true)
-    public TableSession getById(Long id) {
-        return findExisting(id);
-    }
+    TableSession getById(Long id);
 
-    @Transactional(readOnly = true)
-    public List<TableSession> getAll() {
-        return tableSessionMapper.findAll();
-    }
+    List<TableSession> getAll();
 
-    public TableSession update(Long id, TableSession input) {
-        findExisting(id);
-        // tokenHash để null: mapper không đụng tới cột token_hash
-        TableSession session = fromInput(input);
-        session.setId(id);
-        tableSessionMapper.update(session);
-        return findExisting(id);
-    }
+    TableSession update(Long id, TableSession input);
 
-    public void delete(Long id) {
-        findExisting(id);
-        tableSessionMapper.deleteById(id);
-    }
-
-    private TableSession findExisting(Long id) {
-        TableSession session = tableSessionMapper.findById(id);
-        if (session == null) {
-            throw new ResourceNotFoundException("Không tìm thấy phiên bàn " + id);
-        }
-        return session;
-    }
-
-    private TableSession fromInput(TableSession input) {
-        require(input, "dữ liệu phiên bàn");
-        TableSession session = new TableSession();
-        session.setTableId(requireReference(input.getTableId(), diningTableMapper::findById, "tableId"));
-        session.setExpiresAt(require(input.getExpiresAt(), "expiresAt"));
-        session.setClosedAt(input.getClosedAt());
-        return session;
-    }
-
+    void delete(Long id);
 }
