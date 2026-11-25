@@ -13,6 +13,7 @@ import org.springboot.smartdining.security.TableTokens;
 import org.springboot.smartdining.service.CustomerSessionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,10 +42,16 @@ public class CustomerSessionServiceImpl implements CustomerSessionService {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OpenTableSessionResponse open(String qrToken) {
-        DiningTable table = diningTableMapper.findByQrToken(qrToken);
-        if (table == null) {
-            throw new ResourceNotFoundException("Mã QR không hợp lệ");
+        DiningTable found = diningTableMapper.findByQrToken(qrToken);
+        if (found == null) {
+            throw invalidQrCode();
+        }
+        // Khóa bàn rồi đọc lại: nếu mã QR đang được đổi thì không được mở phiên bằng mã cũ
+        DiningTable table = diningTableMapper.findByIdForUpdate(found.getId());
+        if (table == null || !table.getQrToken().equals(found.getQrToken())) {
+            throw invalidQrCode();
         }
         requireActive(table);
 
@@ -100,6 +107,10 @@ public class CustomerSessionServiceImpl implements CustomerSessionService {
         if (diningTableMapper.update(table) == 0) {
             throw new ConflictException("Bàn vừa được người khác sửa, hãy thử lại");
         }
+    }
+
+    private static ResourceNotFoundException invalidQrCode() {
+        return new ResourceNotFoundException("Mã QR không hợp lệ");
     }
 
     private void requireActive(DiningTable table) {

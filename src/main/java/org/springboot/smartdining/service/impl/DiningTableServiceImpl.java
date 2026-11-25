@@ -11,8 +11,6 @@ import org.springboot.smartdining.service.DiningTableService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.List;
 
 import static org.springboot.smartdining.service.impl.ServiceChecks.require;
@@ -23,15 +21,13 @@ import static org.springboot.smartdining.service.impl.ServiceChecks.requireText;
 @Transactional
 public class DiningTableServiceImpl implements DiningTableService {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     private final DiningTableMapper diningTableMapper;
     private final OrderMapper orderMapper;
 
     @Override
     public DiningTable create(DiningTable input) {
         DiningTable table = fromInput(input);
-        table.setQrToken(newQrToken());
+        table.setQrToken(QrTokens.newToken());
         diningTableMapper.insert(table);
         return findExisting(table.getId());
     }
@@ -102,12 +98,5 @@ public class DiningTableServiceImpl implements DiningTableService {
         table.setName(requireText(input.getName(), "name", 50));
         table.setStatus(input.getStatus());
         return table;
-    }
-
-    /** 16 byte ngẫu nhiên viết dạng hex, đủ 32 ký tự. */
-    private static String newQrToken() {
-        byte[] bytes = new byte[16];
-        RANDOM.nextBytes(bytes);
-        return HexFormat.of().formatHex(bytes);
     }
 }
