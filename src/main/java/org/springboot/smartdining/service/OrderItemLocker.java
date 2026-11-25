@@ -3,6 +3,7 @@ package org.springboot.smartdining.service;
 import lombok.RequiredArgsConstructor;
 import org.springboot.smartdining.entity.Order;
 import org.springboot.smartdining.entity.OrderItem;
+import org.springboot.smartdining.enums.OrderItemStatus;
 import org.springboot.smartdining.enums.OrderStatus;
 import org.springboot.smartdining.enums.OrderType;
 import org.springboot.smartdining.exception.ConflictException;
@@ -52,6 +53,11 @@ class OrderItemLocker {
         }
         requireOpen(order);
         return new LockedItem(order, item);
+    }
+
+    static ConflictException invalidTransition(OrderItemStatus from, OrderItemStatus to) {
+        return new ConflictException("INVALID_STATUS_TRANSITION",
+                "Không chuyển được món từ " + from + " sang " + to);
     }
 
     private OrderItem findItem(Long itemId) {

@@ -1,6 +1,7 @@
 package org.springboot.smartdining.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springboot.smartdining.dto.StaffItemResponse;
 import org.springboot.smartdining.dto.StaffOrderResponse;
 import org.springboot.smartdining.dto.StaffTableResponse;
 import org.springboot.smartdining.entity.DiningTable;
@@ -8,13 +9,18 @@ import org.springboot.smartdining.entity.Order;
 import org.springboot.smartdining.entity.OrderItem;
 import org.springboot.smartdining.entity.Product;
 import org.springboot.smartdining.enums.OrderItemStatus;
+import org.springboot.smartdining.enums.OrderType;
 import org.springboot.smartdining.enums.TableStatus;
+import org.springboot.smartdining.exception.ConflictException;
 import org.springboot.smartdining.exception.ResourceNotFoundException;
 import org.springboot.smartdining.mapper.DiningTableMapper;
 import org.springboot.smartdining.mapper.OrderItemMapper;
 import org.springboot.smartdining.mapper.OrderMapper;
 import org.springboot.smartdining.mapper.ProductMapper;
+import org.springboot.smartdining.mapper.StaffMapper;
+import org.springboot.smartdining.security.CurrentUser;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -22,6 +28,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static org.springboot.smartdining.service.ServiceChecks.now;
 
 /** Màn hình của nhân viên phục vụ. */
 @Service
@@ -33,6 +41,9 @@ public class StaffService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductMapper productMapper;
+    private final StaffMapper staffMapper;
+    private final OrderItemLocker orderItemLocker;
+    private final CurrentUser currentUser;
 
     /** Sơ đồ bàn (STF-1), ẩn bàn INACTIVE. Đọc bàn, đơn, món mỗi thứ một lần. */
     public List<StaffTableResponse> getTables() {
@@ -72,6 +83,31 @@ public class StaffService {
                 .toList();
         return new StaffOrderResponse(table.getId(), table.getName(), table.getStatus(), order.getId(),
                 order.getCreatedAt(), OrderAmounts.sentTotal(items), lines);
+    }
+
+    /** Món đã xong chờ mang ra tại bàn. Đơn mang về giao ở quầy nên không nằm đây. */
+    public List<StaffItemResponse> getReadyItems() {
+        return staffMapper.findReadyItems();
+    }
+
+    /** Mang món ra bàn (STF-2): chỉ món READY. */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public StaffItemResponse serve(Long itemId) {
+        OrderItemLocker.LockedItem locked = orderItemLocker.lock(itemId);
+        if (locked.order().getOrderType() != OrderType.DINE_IN) {
+            throw new ConflictException("INVALID_ORDER_TYPE", "Đơn mang về giao ở quầy, không mang ra bàn");
+        }
+        OrderItem item = locked.item();
+        if (item.getStatus() != OrderItemStatus.READY) {
+            throw OrderItemLocker.invalidTransition(item.getStatus(), OrderItemStatus.SERVED);
+        }
+        item.setStatus(OrderItemStatus.SERVED);
+        item.setServedBy(currentUser.getId());
+        item.setServedAt(now());
+        if (orderItemMapper.update(item) == 0) {
+            throw new ConflictException("Món vừa được người khác sửa, hãy thử lại");
+        }
+        return staffMapper.findItemById(itemId);
     }
 
     private Map<Long, Order> openOrdersByTable() {

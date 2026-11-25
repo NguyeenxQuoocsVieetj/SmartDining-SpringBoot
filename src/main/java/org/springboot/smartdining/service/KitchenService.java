@@ -57,7 +57,7 @@ public class KitchenService {
                 item.setPreparedBy(currentUser.getId());
             }
         } else {
-            throw invalidTransition(current, target);
+            throw OrderItemLocker.invalidTransition(current, target);
         }
         item.setStatus(target);
         save(item);
@@ -72,7 +72,7 @@ public class KitchenService {
         Order order = locked.order();
         OrderItem item = locked.item();
         if (item.getStatus() != OrderItemStatus.PENDING && item.getStatus() != OrderItemStatus.PREPARING) {
-            throw invalidTransition(item.getStatus(), OrderItemStatus.CANCELLED);
+            throw OrderItemLocker.invalidTransition(item.getStatus(), OrderItemStatus.CANCELLED);
         }
 
         LocalDateTime cancelledAt = now();
@@ -105,10 +105,5 @@ public class KitchenService {
         if (orderItemMapper.update(item) == 0) {
             throw new ConflictException("Món vừa được người khác sửa, hãy thử lại");
         }
-    }
-
-    private static ConflictException invalidTransition(OrderItemStatus from, OrderItemStatus to) {
-        return new ConflictException("INVALID_STATUS_TRANSITION",
-                "Không chuyển được món từ " + from + " sang " + to);
     }
 }
