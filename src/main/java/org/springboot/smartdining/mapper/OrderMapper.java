@@ -44,4 +44,7 @@ public interface OrderMapper {
 
     /** Đọc và khóa đơn tới hết transaction, dùng cho đơn không có bàn. */
     Order findByIdForUpdate(Long id);
+
+    /** Mọi đơn tại bàn đang mở. */
+    List<Order> findUnpaidDineIn();
 }

@@ -39,7 +39,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleNotFound(ResourceNotFoundException ex) {
-        return problem(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage());
     }
 
     @ExceptionHandler(ConflictException.class)

@@ -41,4 +41,7 @@ public interface OrderItemMapper {
 
     /** Mọi món của đơn, theo thứ tự thêm vào. */
     List<OrderItem> findByOrderId(Long orderId);
+
+    /** Mọi món của các đơn tại bàn đang mở, đọc một lần cho tất cả bàn. */
+    List<OrderItem> findOfUnpaidDineInOrders();
 }
